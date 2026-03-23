@@ -1,15 +1,15 @@
 ﻿using VehicleMaintenance.Data;
-using VehicleMaintenance.Models;
 using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Services.Security;
 using Microsoft.EntityFrameworkCore;
+using VehicleMaintenance.Models.Entities;
 
 namespace VehicleMaintenance.Services
 {
-    public class UserService(AppDbContext context /*PasswordHasher passwordHasher*/)
+    public class UserService(AppDbContext context, IPasswordHasher passwordHasher)
     {
         private readonly AppDbContext _context = context;
-        //private readonly PasswordHasher _passwordHasher = passwordHasher;
+        private readonly IPasswordHasher _passwordHasher = passwordHasher;
 
         public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
         {
@@ -20,7 +20,7 @@ namespace VehicleMaintenance.Services
                 Age = dto.Age,
                 Gender = dto.Gender,
                 DrivingExperience = dto.DrivingExperience,
-                //PasswordHash = _passwordHasher.Hash(dto.Password )
+                PasswordHash = _passwordHasher.Hash(dto.Password )
             };
 
             _context.Users.Add(user);

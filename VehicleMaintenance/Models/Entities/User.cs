@@ -1,4 +1,6 @@
-﻿namespace VehicleMaintenance.Models
+﻿using VehicleMaintenance.Models.Enums;
+
+namespace VehicleMaintenance.Models.Entities
 {
     public class User
     {
@@ -10,12 +12,6 @@
         public int? DrivingExperience { get; set; }
         public string PasswordHash { get; set; } = null!;
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
-        //public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
-    }
-    public enum Gender
-    {
-        Male,
-        Female,
-        Other
+        public ICollection<Vehicle> Vehicles { get; set; } = [];
     }
 }

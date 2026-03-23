@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using VehicleMaintenance.Models;
+using VehicleMaintenance.Models.Enums;
 
 namespace VehicleMaintenance.DTOs.Users
 {
