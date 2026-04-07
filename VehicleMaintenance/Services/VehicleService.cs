@@ -9,7 +9,7 @@ namespace VehicleMaintenance.Services
     {
         private readonly AppDbContext _context = context;
 
-        public async Task<VehicleDto> CreateVehicleAsync(CreateVehicleDto dto) // interfaces
+        public async Task<VehicleDto> CreateVehicleAsync(CreateVehicleDto dto)
         {
             var vehicle = new Vehicle
             {
@@ -59,7 +59,7 @@ namespace VehicleMaintenance.Services
                     FuelType = v.FuelType,
                     Mileage = v.Mileage
                 })
-                .ToListAsync(); // repositories!!
+                .ToListAsync();
         }
     }
 }

@@ -10,9 +10,6 @@ namespace VehicleMaintenance.Services
     {
         private readonly AppDbContext _context = context;
         private readonly IPasswordHasher _passwordHasher = passwordHasher;
-        // TODO: Add static general methods for creating, and retrieving users
-        //// alot of repeted code in the controllers, better make a base controller for this? and alot of repetetive code in the services, better make a base service for this? 
-        //////// also consider using automapper for mapping between entities and dtos, but for now we will do it manually
         public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
         {
             var user = new User

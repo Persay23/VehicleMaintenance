@@ -14,7 +14,6 @@ namespace VehicleMaintenance.Services
             var maintenancerecord = new MaintenanceRecord
             {
                 VehicleId = dto.VehicleId,
-                ComponentId = dto.ComponentId,
                 ServiceDate = dto.ServiceDate,
                 ServiceType = dto.ServiceType,
                 Cost = dto.Cost,
@@ -28,7 +27,6 @@ namespace VehicleMaintenance.Services
             {
                 MaintenanceRecordId = maintenancerecord.MaintenanceRecordId,
                 VehicleId = maintenancerecord.VehicleId,
-                ComponentId = dto.ComponentId,
                 ServiceDate = dto.ServiceDate,
                 ServiceType = dto.ServiceType,
                 Cost = dto.Cost,
@@ -44,7 +42,6 @@ namespace VehicleMaintenance.Services
                 {
                     MaintenanceRecordId = mr.MaintenanceRecordId,
                     VehicleId = mr.VehicleId,
-                    ComponentId = mr.ComponentId,
                     ServiceDate = mr.ServiceDate,
                     ServiceType = mr.ServiceType,
                     Cost = mr.Cost,
