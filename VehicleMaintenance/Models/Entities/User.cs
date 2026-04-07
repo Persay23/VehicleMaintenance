@@ -4,7 +4,7 @@ namespace VehicleMaintenance.Models.Entities
 {
     public class User
     {
-        public int Id { get; private set; }
+        public int UserId { get; private set; }
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
         public int? Age { get; set; }
@@ -12,6 +12,6 @@ namespace VehicleMaintenance.Models.Entities
         public int? DrivingExperience { get; set; }
         public string PasswordHash { get; set; } = null!;
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
-        public ICollection<Vehicle> Vehicles { get; set; } = [];
+        public ICollection<Vehicle> Vehicles { get; set; } = []; // icollection or list?
     }
 }

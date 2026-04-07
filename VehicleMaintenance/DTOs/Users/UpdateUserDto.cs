@@ -2,5 +2,6 @@
 {
     public class UpdateUserDto
     {
+        //TODO: Add validation attributes
     }
 }

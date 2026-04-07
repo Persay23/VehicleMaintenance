@@ -1,5 +1,4 @@
 ﻿using VehicleMaintenance.Models.Enums;
-using VehicleMaintenance.Models.Entities;
 
 namespace VehicleMaintenance.DTOs.Users
 {

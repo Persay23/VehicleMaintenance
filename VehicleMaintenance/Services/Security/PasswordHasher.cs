@@ -10,7 +10,7 @@ namespace VehicleMaintenance.Services.Security
             return _hasher.HashPassword(null!, password);
         }
 
-        public bool Verify(string password, string hash)
+        public bool Verify(string password, string hash)// microsoft login page!!
         {
             var result = _hasher.VerifyHashedPassword(null!, hash, password);
             return result == PasswordVerificationResult.Success;
