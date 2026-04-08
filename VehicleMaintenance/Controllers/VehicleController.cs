@@ -11,6 +11,25 @@ namespace VehicleMaintenance.Controllers
     {
         private readonly VehicleService _vehicleService = vehicleService;
 
+        [HttpGet]
+        public async Task<ActionResult<List<VehicleDto>>> GetVehicles()
+        {
+            var vehicles = await _vehicleService.GetAllVehiclesAsync();
+            return Ok(vehicles);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<VehicleDto>> GetVehicleById(int id)
+        {
+            var vehicle = await _vehicleService.GetVehicleByIdAsync(id);
+            if (vehicle is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(vehicle);
+        }
+
         [HttpPost]
         public async Task<ActionResult<CreateVehicleDto>> CreateVehicle(CreateVehicleDto createVehicleDto)
         {
@@ -18,11 +37,28 @@ namespace VehicleMaintenance.Controllers
             return Ok(createdVehicle);
         }
 
-        [HttpGet("{userId}")]
-        public async Task<ActionResult<List<VehicleDto>>> GetVehiclesByUserId(int userId)
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult<VehicleDto>> UpdateVehicle(int id, UpdateVehicleDto dto)
         {
-            var vehicles = await _vehicleService.GetVehiclesByUserIdAsync(userId);
-            return Ok(vehicles);
+            var updated = await _vehicleService.UpdateVehicleByIdAsync(id, dto);
+            if (updated is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(updated);
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteVehicle(int id)
+        {
+            var deleted = await _vehicleService.DeleteVehicleByIdAsync(id);
+            if (!deleted)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
         }
     }
 }

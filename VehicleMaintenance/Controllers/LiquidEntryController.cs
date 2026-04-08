@@ -12,10 +12,22 @@ namespace VehicleMaintenance.Controllers
         private readonly LiquidEntryService _liquidEntryService = liquidEntryService;
 
         [HttpGet]
-        public async Task<ActionResult<List<LiquidEntryDto>>> GetLiquidEntriesByVehicleId(int vehicleId)
+        public async Task<ActionResult<List<LiquidEntryDto>>> GetLiquidEntries()
         {
-            var liquidEntries = await _liquidEntryService.GetLiquidEntriesByVehicleIdAsync(vehicleId);
+            var liquidEntries = await _liquidEntryService.GetAllLiquidEntriesAsync();
             return Ok(liquidEntries);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<LiquidEntryDto>> GetLiquidEntryById(int id)
+        {
+            var liquidEntry = await _liquidEntryService.GetLiquidEntryByIdAsync(id);
+            if (liquidEntry is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(liquidEntry);
         }
 
         [HttpPost]
@@ -23,6 +35,30 @@ namespace VehicleMaintenance.Controllers
         {
             var createdLiquidEntry = await _liquidEntryService.CreateLiquidEntryAsync(createLiquidEntryDto);
             return Ok(createdLiquidEntry);
+        }
+
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult<LiquidEntryDto>> UpdateLiquidEntry(int id, UpdateLiquidEntryDto dto)
+        {
+            var updated = await _liquidEntryService.UpdateLiquidEntryByIdAsync(id, dto);
+            if (updated is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(updated);
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteLiquidEntry(int id)
+        {
+            var deleted = await _liquidEntryService.DeleteLiquidEntryByIdAsync(id);
+            if (!deleted)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
         }
     }
 }

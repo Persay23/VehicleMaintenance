@@ -12,6 +12,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<VehicleService>();
+builder.Services.AddScoped<VehicleComponentService>();
+builder.Services.AddScoped<LiquidEntryService>();
+builder.Services.AddScoped<MaintenanceRecordService>();
+builder.Services.AddScoped<MaintenanceRecordComponentService>();
+builder.Services.AddScoped<PredictionService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 builder.Services.AddControllers();

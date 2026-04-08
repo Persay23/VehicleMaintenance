@@ -14,8 +14,20 @@ namespace VehicleMaintenance.Controllers
         [HttpGet]
         public async Task<ActionResult<List<UserDto>>> GetUsers()
         {
-            var users = await _userService.GetUsersAsync();
+            var users = await _userService.GetAllUsersAsync();
             return Ok(users);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<UserDto>> GetUserById(int id)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(user);
         }
 
         [HttpPost]
@@ -23,6 +35,30 @@ namespace VehicleMaintenance.Controllers
         {
             var createdUser = await _userService.CreateUserAsync(createUserDto);
             return Ok(createdUser);
+        }
+
+        [HttpPatch("{id:int}")]
+        public async Task<ActionResult<UserDto>> UpdateUser(int id, UpdateUserDto dto)
+        {
+            var updated = await _userService.UpdateUserByIdAsync(id, dto);
+            if (updated is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(updated);
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var deleted = await _userService.DeleteUserByIdAsync(id);
+            if (!deleted)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
         }
     }
 }
