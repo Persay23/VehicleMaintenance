@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
+using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.Security;
 
@@ -7,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();

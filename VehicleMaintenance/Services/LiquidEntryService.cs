@@ -1,59 +1,33 @@
-﻿using VehicleMaintenance.Data;
+﻿using AutoMapper;
+using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.LiquidEntry;
 using VehicleMaintenance.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace VehicleMaintenance.Services
 {
-    public class LiquidEntryService(AppDbContext context)
+    public class LiquidEntryService(AppDbContext context, IMapper mapper)
     {
         private readonly AppDbContext _context = context;
+        private readonly IMapper _mapper = mapper;
 
         public async Task<LiquidEntryDto> CreateLiquidEntryAsync(CreateLiquidEntryDto dto)
         {
-            var liquidEntry = new LiquidEntry
-            {
-                VehicleId = dto.VehicleId,
-                LiquidType = dto.LiquidType,
-                RefillDate = dto.RefillDate,
-                Amount = dto.Amount,
-                Cost = dto.Cost,
-                Mileage = dto.Mileage,
-                Notes = dto.Notes
-            };
+            var liquidEntry = _mapper.Map<LiquidEntry>(dto);
 
             _context.LiquidEntries.Add(liquidEntry);
             await _context.SaveChangesAsync();
 
-            return new LiquidEntryDto
-            {
-                LiquidEntryId = liquidEntry.LiquidEntryId,
-                VehicleId = liquidEntry.VehicleId,
-                LiquidType = dto.LiquidType,
-                RefillDate = dto.RefillDate,
-                Amount = dto.Amount,
-                Cost = dto.Cost,
-                Mileage = dto.Mileage,
-                Notes = dto.Notes
-            };
+            return _mapper.Map<LiquidEntryDto>(liquidEntry);
         }
 
         public async Task<List<LiquidEntryDto>> GetLiquidEntriesByVehicleIdAsync(int vehicleId)
         {
-            return await _context.LiquidEntries
+            var liquidEntries = await _context.LiquidEntries
                 .Where(le => le.VehicleId == vehicleId)
-                .Select(le => new LiquidEntryDto
-                {
-                    LiquidEntryId = le.LiquidEntryId,
-                    VehicleId = le.VehicleId,
-                    LiquidType = le.LiquidType,
-                    RefillDate = le.RefillDate,
-                    Amount = le.Amount,
-                    Cost = le.Cost,
-                    Mileage = le.Mileage,
-                    Notes = le.Notes
-                })
                 .ToListAsync();
+
+            return _mapper.Map<List<LiquidEntryDto>>(liquidEntries);
         }
     }
 }
