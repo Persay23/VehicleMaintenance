@@ -16,7 +16,7 @@ namespace VehicleMaintenance.Models.Entities
 
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
-        public int? LaborMinutes { get; set; }
+        public int? LaborDays { get; set; }
 
         public decimal? LaborCost { get; set; }
         public decimal? PartsCost { get; set; }

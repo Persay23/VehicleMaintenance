@@ -4,10 +4,10 @@ namespace VehicleMaintenance.Services.Interfaces
 {
     public interface ILiquidEntryService
     {
-        Task<List<LiquidEntryDto>> GetAllAsync();
-        Task<LiquidEntryDto> PostAsync(CreateLiquidEntryDto dto);
-        Task<LiquidEntryDto?> GetByIdAsync(int id);
-        Task<bool> DeleteAsync(int id);
-        Task<LiquidEntryDto?> PatchAsync(int id, UpdateLiquidEntryDto dto);
+        Task<LiquidEntryDto> CreateLiquidEntryAsync(CreateLiquidEntryDto dto);
+        Task<List<LiquidEntryDto>> GetAllLiquidEntriesAsync();
+        Task<LiquidEntryDto?> GetLiquidEntryByIdAsync(int id);
+        Task<LiquidEntryDto?> UpdateLiquidEntryByIdAsync(int id, UpdateLiquidEntryDto dto);
+        Task<bool> DeleteLiquidEntryByIdAsync(int id);
     }
 }

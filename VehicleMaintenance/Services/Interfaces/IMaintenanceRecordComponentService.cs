@@ -4,10 +4,10 @@ namespace VehicleMaintenance.Services.Interfaces
 {
     public interface IMaintenanceRecordComponentService
     {
-        Task<List<MaintenanceRecordComponentDto>> GetAllAsync();
-        Task<MaintenanceRecordComponentDto> PostAsync(CreateMaintenanceRecordComponentDto dto);
-        Task<MaintenanceRecordComponentDto?> GetByIdAsync(int id);
-        Task<bool> DeleteAsync(int id);
-        Task<MaintenanceRecordComponentDto?> PatchAsync(int id, UpdateMaintenanceRecordComponentDto dto);
+        Task<MaintenanceRecordComponentDto> CreateMaintenanceRecordComponentAsync(CreateMaintenanceRecordComponentDto dto);
+        Task<List<MaintenanceRecordComponentDto>> GetAllMaintenanceRecordComponentsAsync();
+        Task<MaintenanceRecordComponentDto?> GetMaintenanceRecordComponentByIdAsync(int id);
+        Task<MaintenanceRecordComponentDto?> UpdateMaintenanceRecordComponentByIdAsync(int id, UpdateMaintenanceRecordComponentDto dto);
+        Task<bool> DeleteMaintenanceRecordComponentByIdAsync(int id);
     }
 }

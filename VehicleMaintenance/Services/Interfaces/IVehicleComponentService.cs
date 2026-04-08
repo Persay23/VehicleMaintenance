@@ -4,10 +4,10 @@ namespace VehicleMaintenance.Services.Interfaces
 {
     public interface IVehicleComponentService
     {
-        Task<List<VehicleComponentDto>> GetAllAsync();
-        Task<VehicleComponentDto> PostAsync(CreateVehicleComponentDto dto);
-        Task<VehicleComponentDto?> GetByIdAsync(int id);
-        Task<bool> DeleteAsync(int id);
-        Task<VehicleComponentDto?> PatchAsync(int id, UpdateVehicleComponentDto dto);
+        Task<VehicleComponentDto> CreateVehicleComponentAsync(CreateVehicleComponentDto dto);
+        Task<List<VehicleComponentDto>> GetAllVehicleComponentsAsync();
+        Task<VehicleComponentDto?> GetVehicleComponentByIdAsync(int id);
+        Task<VehicleComponentDto?> UpdateVehicleComponentByIdAsync(int id, UpdateVehicleComponentDto dto);
+        Task<bool> DeleteVehicleComponentByIdAsync(int id);
     }
 }

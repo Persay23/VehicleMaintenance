@@ -4,10 +4,10 @@ namespace VehicleMaintenance.Services.Interfaces
 {
     public interface IPredictionService
     {
-        Task<List<PredictionDto>> GetAllAsync();
-        Task<PredictionDto> PostAsync(CreatePredictionDto dto);
-        Task<PredictionDto?> GetByIdAsync(int id);
-        Task<bool> DeleteAsync(int id);
-        Task<PredictionDto?> PatchAsync(int id, UpdatePredictionDto dto);
+        Task<PredictionDto> CreatePredictionAsync(CreatePredictionDto dto);
+        Task<List<PredictionDto>> GetAllPredictionsAsync();
+        Task<PredictionDto?> GetPredictionByIdAsync(int id);
+        Task<PredictionDto?> UpdatePredictionByIdAsync(int id, UpdatePredictionDto dto);
+        Task<bool> DeletePredictionByIdAsync(int id);
     }
 }
