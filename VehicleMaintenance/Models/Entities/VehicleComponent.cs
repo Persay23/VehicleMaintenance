@@ -6,7 +6,7 @@ namespace VehicleMaintenance.Models.Entities
     public class VehicleComponent
     {
         [Key]
-        public int ComponentId { get; private set; }
+        public int ComponentId { get; private set; } // maybe rename to VehicleComponentId to avoid breaking convention
         public int VehicleId { get; set; }
         //public string VehicleComponentName { get; set; } = null!;  // do i need name for the component or is the type enough?
         public ComponentType ComponentType { get; set; }

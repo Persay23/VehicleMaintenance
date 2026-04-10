@@ -1,8 +1,9 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.Mappings;
+using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Services;
-using VehicleMaintenance.Services.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,8 +19,20 @@ builder.Services.AddScoped<LiquidEntryService>();
 builder.Services.AddScoped<MaintenanceRecordService>();
 builder.Services.AddScoped<MaintenanceRecordComponentService>();
 builder.Services.AddScoped<PredictionService>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
+builder.Services.AddIdentity<User, IdentityRole>(options => //NoOpEmailSender needs to be added
+{
+    // Password rules
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+})
+.AddEntityFrameworkStores<AppDbContext>()
+.AddDefaultTokenProviders()
+.AddDefaultUI();
+
+builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -32,7 +45,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
+app.MapRazorPages();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

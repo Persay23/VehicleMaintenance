@@ -11,7 +11,6 @@ namespace VehicleMaintenance.Services
     {
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
-        // TODO: Add static general methods for creating, and retrieving users
 
         public async Task<VehicleComponentDto> CreateVehicleComponentAsync(CreateVehicleComponentDto dto)
         {

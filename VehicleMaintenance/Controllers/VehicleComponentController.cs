@@ -11,17 +11,7 @@ namespace VehicleMaintenance.Controllers
     public class VehicleComponentController(VehicleComponentService vehicleComponentService) : ControllerBase
     {
         private readonly VehicleComponentService _vehicleComponentService = vehicleComponentService;
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="createVehicleComponentDto"></param>
-        /// <returns></returns>
-        [HttpPost]
-        public async Task<ActionResult> CreateVehicleComponent(CreateVehicleComponentDto createVehicleComponentDto)
-        {
-            var createdVehicleComponent = await _vehicleComponentService.CreateVehicleComponentAsync(createVehicleComponentDto);
-            return Ok(createdVehicleComponent);
-        }
+
         /// <summary>
         /// Get all vehicles
         /// </summary>
@@ -33,6 +23,20 @@ namespace VehicleMaintenance.Controllers
             var vehicleComponents = await _vehicleComponentService.GetAllVehicleComponentsAsync();
             return Ok(vehicleComponents);
         }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="createVehicleComponentDto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<ActionResult> CreateVehicleComponent(CreateVehicleComponentDto createVehicleComponentDto)
+        {
+            var createdVehicleComponent = await _vehicleComponentService.CreateVehicleComponentAsync(createVehicleComponentDto);
+            return Ok(createdVehicleComponent);
+        }
+        
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<VehicleComponentDto>> GetVehicleComponentById(int id)

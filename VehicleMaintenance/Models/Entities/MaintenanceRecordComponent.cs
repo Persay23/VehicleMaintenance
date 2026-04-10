@@ -10,7 +10,7 @@ namespace VehicleMaintenance.Models.Entities
 
         public ComponentChangeType ChangeType { get; set; }
         public string? WorkDescription { get; set; }
-        public string? ChangedParts { get; set; }
+        public string? ChangedParts { get; set; }   
         public State? OldState { get; set; }
         public State? NewState { get; set; }
 

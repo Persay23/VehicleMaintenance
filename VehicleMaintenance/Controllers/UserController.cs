@@ -18,8 +18,8 @@ namespace VehicleMaintenance.Controllers
             return Ok(users);
         }
 
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<UserDto>> GetUserById(int id)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<UserDto>> GetUserById(string id)
         {
             var user = await _userService.GetUserByIdAsync(id);
             if (user is null)
@@ -37,8 +37,8 @@ namespace VehicleMaintenance.Controllers
             return Ok(createdUser);
         }
 
-        [HttpPatch("{id:int}")]
-        public async Task<ActionResult<UserDto>> UpdateUser(int id, UpdateUserDto dto)
+        [HttpPatch("{id}")]
+        public async Task<ActionResult<UserDto>> UpdateUser(string id, UpdateUserDto dto)
         {
             var updated = await _userService.UpdateUserByIdAsync(id, dto);
             if (updated is null)
@@ -49,8 +49,8 @@ namespace VehicleMaintenance.Controllers
             return Ok(updated);
         }
 
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(string id)
         {
             var deleted = await _userService.DeleteUserByIdAsync(id);
             if (!deleted)

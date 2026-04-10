@@ -12,7 +12,7 @@ namespace VehicleMaintenance.Services
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<VehicleDto> CreateVehicleAsync(CreateVehicleDto dto) // interfaces
+        public async Task<VehicleDto> CreateVehicleAsync(CreateVehicleDto dto)
         {
             var vehicle = _mapper.Map<Vehicle>(dto);
 
@@ -25,7 +25,7 @@ namespace VehicleMaintenance.Services
         public async Task<List<VehicleDto>> GetAllVehiclesAsync()
         {
             var vehicles = await _context.Vehicles.ToListAsync();
-            return _mapper.Map<List<VehicleDto>>(vehicles); // repositories!!
+            return _mapper.Map<List<VehicleDto>>(vehicles);
         }
 
         public async Task<VehicleDto?> GetVehicleByIdAsync(int id)

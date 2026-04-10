@@ -6,8 +6,8 @@ namespace VehicleMaintenance.Services.Interfaces
     {
         Task<UserDto> CreateUserAsync(CreateUserDto dto);
         Task<List<UserDto>> GetAllUsersAsync();
-        Task<UserDto?> GetUserByIdAsync(int id);
-        Task<UserDto?> UpdateUserByIdAsync(int id, UpdateUserDto dto);
-        Task<bool> DeleteUserByIdAsync(int id);
+        Task<UserDto?> GetUserByIdAsync(string id);
+        Task<UserDto?> UpdateUserByIdAsync(string id, UpdateUserDto dto);
+        Task<bool> DeleteUserByIdAsync(string id);
     }
 }

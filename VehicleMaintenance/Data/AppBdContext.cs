@@ -1,10 +1,10 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Models.Entities;
 namespace VehicleMaintenance.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<User>(options)
 {
-    public DbSet<User> Users { get; set; }
     public DbSet<Vehicle> Vehicles { get; set; }
     public DbSet<VehicleComponent> VehicleComponents { get; set; }
     public DbSet<MaintenanceRecord> MaintenanceRecords { get; set; }
@@ -14,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<Vehicle>()
             .HasOne(v => v.User)
             .WithMany(u => u.Vehicles)
@@ -21,7 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<VehicleComponent>()
-            .HasKey(c => c.ComponentId); // why do i need this here? isnt it automatically set as the primary key since its named Id? and only for this one, every other entity has the same convention but doesnt need this line
+            .HasKey(c => c.ComponentId); // should be renamed to VehicleComponentId to follow convention
 
         modelBuilder.Entity<VehicleComponent>()
             .HasOne(c => c.Vehicle)

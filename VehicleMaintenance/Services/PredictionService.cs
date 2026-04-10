@@ -4,7 +4,7 @@ using VehicleMaintenance.DTOs.Prediction;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Services.Interfaces;
 
-namespace VehicleMaintenance.Services
+namespace VehicleMaintenance.Services // ???????? wtf
 {
     public class PredictionService(AppDbContext context) : IPredictionService
     {

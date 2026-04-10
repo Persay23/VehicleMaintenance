@@ -16,7 +16,7 @@ namespace VehicleMaintenance.Mappings
             CreateMap<CreateUserDto, User>()
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore());
             CreateMap<User, UserDto>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.UserId));
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id));
 
             CreateMap<CreateVehicleDto, Vehicle>();
             CreateMap<Vehicle, VehicleDto>();
@@ -28,7 +28,7 @@ namespace VehicleMaintenance.Mappings
             CreateMap<LiquidEntry, LiquidEntryDto>();
 
             CreateMap<CreateMaintenanceRecordDto, MaintenanceRecord>();
-            CreateMap<MaintenanceRecord, MaintenanceRecordDto>()
+            CreateMap<MaintenanceRecord, MaintenanceRecordDto>() // dive in
                 .ForMember(dest => dest.ComponentId, opt => opt.MapFrom(src =>
                     src.MaintenanceRecordComponents
                         .Select(mrc => (int?)mrc.ComponentId)

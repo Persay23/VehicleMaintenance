@@ -1,0 +1,15 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<VehicleMaintenance.Models.Entities.User> SignInManager
+@inject UserManager<VehicleMaintenance.Models.Entities.User> UserManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <form method="post" asp-area="Identity" asp-page="/Account/Logout">
+        <button type="submit">Logout (@UserManager.GetUserName(User))</button>
+    </form>
+}
+else
+{
+    <a asp-area="Identity" asp-page="/Account/Login">Login</a>
+    <a asp-area="Identity" asp-page="/Account/Register">Register</a>
+}
