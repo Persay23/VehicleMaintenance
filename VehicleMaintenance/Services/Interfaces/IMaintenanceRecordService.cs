@@ -9,5 +9,6 @@ namespace VehicleMaintenance.Services.Interfaces
         Task<MaintenanceRecordDto?> GetMaintenanceRecordByIdAsync(int id);
         Task<MaintenanceRecordDto?> UpdateMaintenanceRecordByIdAsync(int id, UpdateMaintenanceRecordDto dto);
         Task<bool> DeleteMaintenanceRecordByIdAsync(int id);
+        Task<List<MaintenanceRecordDto>> GetByVehicleAsync(int vehicleId, DateTime? fromDate, DateTime? toDate, string? serviceType);
     }
 }

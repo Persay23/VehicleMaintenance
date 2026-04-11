@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using VehicleMaintenance.Services;
 using VehicleMaintenance.DTOs.MaintenanceRecords;
+using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services;
 
 
 namespace VehicleMaintenance.Controllers
@@ -28,6 +29,14 @@ namespace VehicleMaintenance.Controllers
             }
 
             return Ok(record);
+        }
+
+        [HttpGet("vehicle/{vehicleId}")]
+        public async Task<IActionResult> GetByVehicle(int vehicleId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] string? serviceType)
+        {
+            var records = await _maintenanceRecordService.GetByVehicleAsync(
+                vehicleId, fromDate, toDate, serviceType);
+            return Ok(records);
         }
 
         [HttpPost]

@@ -5,7 +5,7 @@ namespace VehicleMaintenance.DTOs.LiquidEntry
 {
     public class UpdateLiquidEntryDto
     {
-        public LiquidType? LiquidType { get; set; }
+        public string? LiquidType { get; set; }
         public DateTime? RefillDate { get; set; }
         public decimal? Amount { get; set; }
 

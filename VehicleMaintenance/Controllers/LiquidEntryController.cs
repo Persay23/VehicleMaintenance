@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using VehicleMaintenance.Services;
 using VehicleMaintenance.DTOs.LiquidEntry;
+using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services;
 
 namespace VehicleMaintenance.Controllers
 {
@@ -28,6 +29,14 @@ namespace VehicleMaintenance.Controllers
             }
 
             return Ok(liquidEntry);
+        }
+
+        [HttpGet("vehicle/{vehicleId}")]
+        public async Task<IActionResult> GetByVehicle(int vehicleId, [FromQuery] LiquidType? liquidType, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+        {
+            var entries = await _liquidEntryService.GetByVehicleAsync(
+                vehicleId, liquidType, fromDate, toDate);
+            return Ok(entries);
         }
 
         [HttpPost]

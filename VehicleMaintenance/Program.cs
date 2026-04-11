@@ -37,6 +37,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevPolicy", policy =>
+    {
+        policy.WithOrigins("https://localhost:7235;http://localhost:5090")  // add in the future the URL for frontend
+               .AllowAnyHeader()
+               .AllowAnyMethod()
+               .AllowCredentials();
+    });
+});
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -45,6 +57,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("DevPolicy");
 app.MapRazorPages();
 app.UseAuthentication();
 app.UseAuthorization();

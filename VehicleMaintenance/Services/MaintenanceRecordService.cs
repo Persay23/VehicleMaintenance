@@ -1,8 +1,9 @@
 using AutoMapper;
-using VehicleMaintenance.Data;
-using VehicleMaintenance.Models.Entities;
-using VehicleMaintenance.DTOs.MaintenanceRecords;
 using Microsoft.EntityFrameworkCore;
+using VehicleMaintenance.Data;
+using VehicleMaintenance.DTOs.MaintenanceRecords;
+using VehicleMaintenance.Models.Entities;
+using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services
@@ -49,7 +50,7 @@ namespace VehicleMaintenance.Services
             }
 
             if (dto.ServiceDate.HasValue) maintenanceRecord.ServiceDate = dto.ServiceDate.Value;
-            if (dto.ServiceType.HasValue) maintenanceRecord.ServiceType = dto.ServiceType.Value;
+            if (!string.IsNullOrWhiteSpace(dto.ServiceType)) maintenanceRecord.ServiceType = Enum.Parse<ServiceType>(dto.ServiceType, true);
             if (dto.Cost.HasValue) maintenanceRecord.Cost = dto.Cost.Value;
             if (dto.Description is not null) maintenanceRecord.Description = dto.Description;
 
@@ -68,6 +69,34 @@ namespace VehicleMaintenance.Services
             _context.MaintenanceRecords.Remove(maintenanceRecord);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<MaintenanceRecordDto>> GetByVehicleAsync(int vehicleId, DateTime? fromDate, DateTime? toDate, string? serviceType)
+        {
+            var query = _context.MaintenanceRecords
+                .Where(mr => mr.VehicleId == vehicleId);
+
+            // ServiceDate is DateTime on your entity
+            if (fromDate.HasValue)
+                query = query.Where(mr => mr.ServiceDate >= fromDate.Value);
+            if (toDate.HasValue)
+                query = query.Where(mr => mr.ServiceDate <= toDate.Value);
+
+            // ServiceType is an enum on your entity
+            if (!string.IsNullOrWhiteSpace(serviceType))
+            {
+                if (Enum.TryParse<ServiceType>(serviceType, true, out var parsedServiceType))
+                {
+                    query = query.Where(mr => mr.ServiceType == parsedServiceType);
+                }
+                // else: invalid value — choose to ignore, return an error, or log as needed
+            }
+
+            var records = await query
+                .OrderByDescending(mr => mr.ServiceDate)
+                .ToListAsync();
+
+            return _mapper.Map<List<MaintenanceRecordDto>>(records);
         }
     }
 }

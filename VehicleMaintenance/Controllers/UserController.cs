@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Services;
+
 
 namespace VehicleMaintenance.Controllers
 {
@@ -37,6 +39,14 @@ namespace VehicleMaintenance.Controllers
             return Ok(createdUser);
         }
 
+        [HttpPost("{id}/change-password")]
+        public async Task<IActionResult> ChangePassword(string id, ChangePasswordDto dto)
+        {
+            var success = await _userService.ChangePasswordAsync(id, dto);
+            if (!success) return BadRequest(new { message = "Password change failed." });
+            return Ok(new { message = "Password changed successfully." });
+        }
+
         [HttpPatch("{id}")]
         public async Task<ActionResult<UserDto>> UpdateUser(string id, UpdateUserDto dto)
         {
@@ -53,12 +63,9 @@ namespace VehicleMaintenance.Controllers
         public async Task<IActionResult> DeleteUser(string id)
         {
             var deleted = await _userService.DeleteUserByIdAsync(id);
-            if (!deleted)
-            {
-                return NotFound();
-            }
-
+            if (!deleted) return NotFound();
             return NoContent();
         }
+
     }
 }

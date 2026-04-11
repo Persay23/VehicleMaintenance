@@ -15,9 +15,9 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecordComponents
         public ComponentChangeType ChangeType { get; set; }
 
         public string? WorkDescription { get; set; }
-        public string? ChangedParts { get; set; }
-        public State? OldState { get; set; }
-        public State? NewState { get; set; }
+        public string? ChangedParts { get; set; }// maybe this should be a list of changed parts instead of a string
+        public string? OldState { get; set; } // e.g., "Worn", "Damaged", "Functional"
+        public string NewState { get; set; } = null!; // e.g., "New", "Repaired", "Functional"
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 

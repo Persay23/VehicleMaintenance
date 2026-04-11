@@ -12,7 +12,7 @@ namespace VehicleMaintenance.DTOs.Prediction
         public string Name { get; set; } = null!;
 
         [Required]
-        public ComponentType ComponentType { get; set; }
+        public string ComponentType { get; set; } = null!; // e.g., "Engine", "Brakes", "Tires"
 
         [Required]
         public DateTime PredictedServiceDate { get; set; }

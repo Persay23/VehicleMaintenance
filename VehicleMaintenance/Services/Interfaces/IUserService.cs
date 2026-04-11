@@ -9,5 +9,6 @@ namespace VehicleMaintenance.Services.Interfaces
         Task<UserDto?> GetUserByIdAsync(string id);
         Task<UserDto?> UpdateUserByIdAsync(string id, UpdateUserDto dto);
         Task<bool> DeleteUserByIdAsync(string id);
+        Task<bool> ChangePasswordAsync(string id, ChangePasswordDto dto);
     }
 }

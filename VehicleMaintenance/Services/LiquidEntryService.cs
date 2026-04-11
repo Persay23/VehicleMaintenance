@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.LiquidEntry;
 using VehicleMaintenance.Models.Entities;
-using Microsoft.EntityFrameworkCore;
+using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services
@@ -42,7 +43,7 @@ namespace VehicleMaintenance.Services
                 return null;
             }
 
-            if (dto.LiquidType.HasValue) liquidEntry.LiquidType = dto.LiquidType.Value;
+            if (!string.IsNullOrWhiteSpace(dto.LiquidType)) liquidEntry.LiquidType = Enum.Parse<LiquidType>(dto.LiquidType, true);
             if (dto.RefillDate.HasValue) liquidEntry.RefillDate = dto.RefillDate.Value;
             if (dto.Amount.HasValue) liquidEntry.Amount = dto.Amount.Value;
             if (dto.Cost.HasValue) liquidEntry.Cost = dto.Cost.Value;
@@ -64,6 +65,29 @@ namespace VehicleMaintenance.Services
             _context.LiquidEntries.Remove(liquidEntry);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<LiquidEntryDto>> GetByVehicleAsync(
+    int vehicleId, LiquidType? liquidType, DateTime? fromDate, DateTime? toDate)
+        {
+            var query = _context.LiquidEntries
+                .Where(le => le.VehicleId == vehicleId);
+
+            // LiquidType is an enum on your entity
+            if (liquidType.HasValue)
+                query = query.Where(le => le.LiquidType == liquidType.Value);
+
+            // RefillDate is DateTime on your entity
+            if (fromDate.HasValue)
+                query = query.Where(le => le.RefillDate >= fromDate.Value);
+            if (toDate.HasValue)
+                query = query.Where(le => le.RefillDate <= toDate.Value);
+
+            var entries = await query
+                .OrderByDescending(le => le.RefillDate)
+                .ToListAsync();
+
+            return _mapper.Map<List<LiquidEntryDto>>(entries);
         }
     }
 }

@@ -9,7 +9,7 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecords
         public int VehicleId { get; set; }
         public int? ComponentId { get; set; }
         public DateTime ServiceDate { get; set; }
-        public ServiceType ServiceType { get; set; }
+        public string ServiceType { get; set; } = null!; // e.g., "Oil Change", "Tire Rotation", "Brake Inspection"
         public decimal Cost { get; set; }
         public string? Description { get; set; }
         public Vehicle Vehicle { get; set; } = null!;

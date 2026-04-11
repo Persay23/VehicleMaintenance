@@ -11,10 +11,10 @@ namespace VehicleMaintenance.DTOs.Vehicles
         [Range(1886, 2030)]
         public int? YearOfProduction { get; set; }
 
-        public VehicleType? VehicleType { get; set; }
-        public TransmissionType? TransmissionType { get; set; }
-        public EngineType? EngineType { get; set; }
-        public FuelType? FuelType { get; set; }
+        public string? VehicleType { get; set; }
+        public string? TransmissionType { get; set; }
+        public string? EngineType { get; set; }
+        public string? FuelType { get; set; }
 
         [Range(0, int.MaxValue)]
         public int? Mileage { get; set; }

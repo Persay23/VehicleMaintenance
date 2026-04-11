@@ -12,7 +12,7 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecords
         public DateTime ServiceDate { get; set; }
 
         [Required]
-        public ServiceType ServiceType { get; set; }
+        public string ServiceType { get; set; } = null!; // e.g., "Oil Change", "Tire Rotation", "Brake Inspection"
 
         [Range(0, double.MaxValue)]
         public decimal Cost { get; set; }

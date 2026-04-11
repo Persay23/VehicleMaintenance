@@ -8,7 +8,7 @@ namespace VehicleMaintenance.DTOs.LiquidEntry
         public int VehicleId { get; set; }
 
         [Required]
-        public LiquidType LiquidType { get; set; }
+        public string LiquidType { get; set; } = null!; // e.g., "Engine Oil", "Coolant", "Brake Fluid"
 
         [Required]
         public DateTime RefillDate { get; set; }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Models.Entities;
+using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services
@@ -15,7 +16,6 @@ namespace VehicleMaintenance.Services
         private readonly UserManager<User> _userManager = userManager;
         // TODO: Add static general methods for creating, and retrieving users
         //// alot of repeted code in the controllers, better make a base controller for this? and alot of repetetive code in the services, better make a base service for this? 
-        //////// also consider using automapper for mapping between entities and dtos, but for now we will do it manually
         public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
         {
             var user = _mapper.Map<User>(dto);
@@ -53,10 +53,15 @@ namespace VehicleMaintenance.Services
             }
 
             if (dto.Name is not null) user.Name = dto.Name;  // is there a better way to do this
-            if (dto.Email is not null) user.Email = dto.Email;
             if (dto.Age.HasValue) user.Age = dto.Age;
-            if (dto.Gender.HasValue) user.Gender = dto.Gender.Value;
+            if (!string.IsNullOrWhiteSpace(dto.Gender)) user.Gender = Enum.Parse<Gender>(dto.Gender, true);
             if (dto.DrivingExperience.HasValue) user.DrivingExperience = dto.DrivingExperience;
+
+            if (dto.Email is not null)
+            {
+                await _userManager.SetEmailAsync(user, dto.Email);
+                await _userManager.SetUserNameAsync(user, dto.Email);
+            }
 
             await _context.SaveChangesAsync();
             return _mapper.Map<UserDto>(user);
@@ -64,15 +69,20 @@ namespace VehicleMaintenance.Services
 
         public async Task<bool> DeleteUserByIdAsync(string id)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-            if (user is null)
-            {
-                return false;
-            }
+            var user = await _userManager.FindByIdAsync(id);
+            if (user is null) return false;
 
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-            return true;
+            var result = await _userManager.DeleteAsync(user);
+            return result.Succeeded;
+        }
+
+        public async Task<bool> ChangePasswordAsync(string id, ChangePasswordDto dto)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user is null) return false;
+
+            var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+            return result.Succeeded;
         }
     }
 }

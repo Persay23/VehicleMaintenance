@@ -8,7 +8,7 @@ namespace VehicleMaintenance.DTOs.Prediction
         public int PredictionId { get; set; }
         public int VehicleId { get; set; }
         public string Name { get; set; } = null!;
-        public ComponentType ComponentType { get; set; } 
+        public string ComponentType { get; set; } = null!; // e.g., "Engine", "Brakes", "Tires"
         public DateTime PredictedServiceDate { get; set; }
         public int ConfidentScore { get; set; } 
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;

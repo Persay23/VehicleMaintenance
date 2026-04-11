@@ -4,6 +4,7 @@ using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Models.Enums;
 
 namespace VehicleMaintenance.Services
 {
@@ -42,7 +43,7 @@ namespace VehicleMaintenance.Services
                 return null;
             }
 
-            if (dto.ComponentType.HasValue) vehicleComponent.ComponentType = dto.ComponentType.Value;
+            if (!string.IsNullOrWhiteSpace(dto.ComponentType)) vehicleComponent.ComponentType = Enum.Parse<ComponentType>(dto.ComponentType, true);
             if (dto.InstallationDate.HasValue) vehicleComponent.InstallationDate = dto.InstallationDate.Value;
             if (dto.LastServiceDate.HasValue) vehicleComponent.LastServiceDate = dto.LastServiceDate.Value;
             if (dto.State.HasValue) vehicleComponent.State = dto.State.Value;
@@ -66,6 +67,52 @@ namespace VehicleMaintenance.Services
             _context.VehicleComponents.Remove(vehicleComponent);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<ComponentHealthDto>> GetComponentHealthAsync(int vehicleId)
+        {
+            var components = await _context.VehicleComponents
+                .Where(c => c.VehicleId == vehicleId)
+                .ToListAsync();
+
+            var now = DateTime.UtcNow;
+
+            return [.. components.Select(c =>
+            {
+                // KM-based health
+                var remainingKm = c.ExpectedLifetimeKm - c.CurrentMileage;
+                var kmPercent = c.ExpectedLifetimeKm > 0
+                    ? Math.Max(0, (double)remainingKm / c.ExpectedLifetimeKm * 100)
+                    : 100;
+
+                // Year-based health — uses InstallationDate from your entity
+                var yearsUsed = (now - c.InstallationDate).TotalDays / 365.25;
+                var yearsPercent = c.ExpectedLifetimeYears > 0
+                    ? Math.Max(0, (1 - yearsUsed / c.ExpectedLifetimeYears) * 100)
+                    : 100;
+
+                // Worst of the two determines overall status
+                var worstPercent = Math.Min(kmPercent, yearsPercent);
+
+                var status = worstPercent switch
+                {
+                    <= 15 => "Critical",
+                    <= 30 => "Warning",
+                    <= 50 => "Monitor",
+                    _ => "Good"
+                };
+
+                return new ComponentHealthDto
+                {
+                    ComponentId = c.ComponentId,
+                    ComponentType = c.ComponentType.ToString(),
+                    CurrentState = c.State.ToString(), // State enum from your entity
+                    RemainingKm = Math.Max(0, remainingKm),
+                    KmLifetimePercent = Math.Round(kmPercent, 1),
+                    YearsLifetimePercent = Math.Round(yearsPercent, 1),
+                    Status = status
+                };
+            })];
         }
     }
 }

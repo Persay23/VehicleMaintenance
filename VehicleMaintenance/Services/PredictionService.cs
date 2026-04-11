@@ -2,6 +2,7 @@
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.Prediction;
 using VehicleMaintenance.Models.Entities;
+using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services // ???????? wtf
@@ -15,7 +16,7 @@ namespace VehicleMaintenance.Services // ???????? wtf
             var prediction = new Prediction
             {
                 VehicleId = dto.VehicleId,
-                ComponentType = dto.ComponentType,
+                ComponentType = Enum.Parse<ComponentType>(dto.ComponentType, true),
                 PredictedServiceDate = dto.PredictedServiceDate,
                 ConfidenceScore = dto.ConfidentScore / 100.0
             };
@@ -28,7 +29,7 @@ namespace VehicleMaintenance.Services // ???????? wtf
                 PredictionId = prediction.PredictionId,
                 VehicleId = prediction.VehicleId,
                 Name = dto.Name,
-                ComponentType = prediction.ComponentType,
+                ComponentType = prediction.ComponentType.ToString(),
                 PredictedServiceDate = prediction.PredictedServiceDate,
                 ConfidentScore = dto.ConfidentScore
             };
@@ -42,7 +43,7 @@ namespace VehicleMaintenance.Services // ???????? wtf
                     PredictionId = p.PredictionId,
                     VehicleId = p.VehicleId,
                     Name = string.Empty,
-                    ComponentType = p.ComponentType,
+                    ComponentType = p.ComponentType.ToString(),
                     PredictedServiceDate = p.PredictedServiceDate,
                 ConfidentScore = (int)(p.ConfidenceScore * 100)
                 })
@@ -62,7 +63,7 @@ namespace VehicleMaintenance.Services // ???????? wtf
                 PredictionId = prediction.PredictionId,
                 VehicleId = prediction.VehicleId,
                 Name = string.Empty,
-                ComponentType = prediction.ComponentType,
+                ComponentType = prediction.ComponentType.ToString(),
                 PredictedServiceDate = prediction.PredictedServiceDate,
                 ConfidentScore = (int)(prediction.ConfidenceScore * 100)
             };
@@ -76,7 +77,7 @@ namespace VehicleMaintenance.Services // ???????? wtf
                 return null;
             }
 
-            if (dto.ComponentType.HasValue) prediction.ComponentType = dto.ComponentType.Value;
+            if (!string.IsNullOrWhiteSpace(dto.ComponentType)) prediction.ComponentType = Enum.Parse<ComponentType>(dto.ComponentType, true);
             if (dto.PredictedServiceDate.HasValue) prediction.PredictedServiceDate = dto.PredictedServiceDate.Value;
             if (dto.ConfidentScore.HasValue) prediction.ConfidenceScore = dto.ConfidentScore.Value / 100.0;
 
@@ -87,7 +88,7 @@ namespace VehicleMaintenance.Services // ???????? wtf
                 PredictionId = prediction.PredictionId,
                 VehicleId = prediction.VehicleId,
                 Name = string.Empty,
-                ComponentType = prediction.ComponentType,
+                ComponentType = prediction.ComponentType.ToString(),
                 PredictedServiceDate = prediction.PredictedServiceDate,
                 ConfidentScore = (int)(prediction.ConfidenceScore * 100)
             };

@@ -24,6 +24,12 @@ namespace VehicleMaintenance.Controllers
             return Ok(vehicleComponents);
         }
 
+        [HttpGet("vehicle/{vehicleId}/health")]
+        public async Task<IActionResult> GetComponentHealth(int vehicleId)
+        {
+            var health = await _vehicleComponentService.GetComponentHealthAsync(vehicleId);
+            return Ok(health);
+        }
 
         /// <summary>
         /// 
@@ -73,5 +79,7 @@ namespace VehicleMaintenance.Controllers
 
             return NoContent();
         }
-    }// alot of repeted code in the controllers, better make a base controller for this? and alot of repetetive code in the services, better make a base service for this?
+
+
+    }
 }

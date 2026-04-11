@@ -15,7 +15,7 @@ namespace VehicleMaintenance.DTOs.Users
         public int? Age { get; set; }
 
         [Required]
-        public Gender Gender { get; set; }
+        public string Gender { get; set; } = null!; // e.g., male, female, other
 
         public int? DrivingExperience { get; set; }
 

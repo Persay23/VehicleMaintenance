@@ -7,11 +7,11 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecordComponents
         public int MaintenanceRecordComponentId { get; set; }
         public int MaintenanceRecordId { get; set; }
         public int ComponentId { get; set; }
-        public ComponentChangeType ChangeType { get; set; }
+        public string ChangeType { get; set; } = null!; // e.g., "Inspection", "Repair", "Replacement"
         public string? WorkDescription { get; set; }
         public string? ChangedParts { get; set; }
-        public State? OldState { get; set; }
-        public State? NewState { get; set; }
+        public string? OldState { get; set; } // e.g., "Worn", "Damaged", "Functional"
+        public string? NewState { get; set; } // e.g., "New", "Repaired", "Functional"
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public int? LaborMinutes { get; set; }

@@ -6,7 +6,7 @@ namespace VehicleMaintenance.DTOs.Prediction
     public class UpdatePredictionDto
     {
         public string? Name { get; set; }
-        public ComponentType? ComponentType { get; set; }
+        public string? ComponentType { get; set; } // e.g., "Engine", "Brakes", "Tires", "Transmission"
         public DateTime? PredictedServiceDate { get; set; }
 
         [Range(0, 100)]

@@ -5,7 +5,7 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
 {
     public class UpdateVehicleComponentDto
     {
-        public ComponentType? ComponentType { get; set; }
+        public string? ComponentType { get; set; } // e.g., "Engine", "Brakes", "Tires", "Transmission"
         public DateTime? InstallationDate { get; set; }
         public DateTime? LastServiceDate { get; set; }
         public State? State { get; set; }

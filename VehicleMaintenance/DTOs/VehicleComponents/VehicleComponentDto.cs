@@ -6,10 +6,10 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
     {
         public int ComponentId { get; set; }
         public int VehicleId { get; set; }
-        public ComponentType ComponentType { get; set; }
+        public string ComponentType { get; set; } = null!; // e.g., "Engine", "Brakes", "Tires", "Transmission"
         public DateTime InstallationDate { get; set; }
         public DateTime? LastServiceDate { get; set; }
-        public State State { get; set; }
+        public string State { get; set; } = "Unknown"; // default to "Unknown" if not provided, can be "Good", "Fair", "Poor", etc.
         public string? Notes { get; set; }
         public int CurrentMileage { get; set; }
         public int ExpectedLifetimeKm { get; set; } // in km

@@ -30,6 +30,21 @@ namespace VehicleMaintenance.Controllers
             return Ok(vehicle);
         }
 
+        [HttpGet("{vehicleId}/summary/costs")]
+        public async Task<IActionResult> GetCostSummary(int vehicleId, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var summary = await _vehicleService.GetCostSummaryAsync(vehicleId, from, to);
+            if (summary is null) return NotFound();
+            return Ok(summary);
+        }
+
+        [HttpGet("{vehicleId}/summary/timeline")]
+        public async Task<IActionResult> GetTimeline(int vehicleId)
+        {
+            var timeline = await _vehicleService.GetTimelineAsync(vehicleId);
+            return Ok(timeline);
+        }
+
         [HttpPost]
         public async Task<ActionResult<CreateVehicleDto>> CreateVehicle(CreateVehicleDto createVehicleDto)
         {
