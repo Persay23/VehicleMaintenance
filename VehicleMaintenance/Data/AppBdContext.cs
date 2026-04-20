@@ -9,7 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<VehicleComponent> VehicleComponents { get; set; }
     public DbSet<MaintenanceRecord> MaintenanceRecords { get; set; }
     public DbSet<MaintenanceRecordComponent> MaintenanceRecordComponents { get; set; }
-    public DbSet<LiquidEntry> LiquidEntries { get; set; }
+    public DbSet<FuelEntry> FuelEntries { get; set; }
     public DbSet<Prediction> Predictions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -20,10 +20,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(v => v.User)
             .WithMany(u => u.Vehicles)
             .HasForeignKey(v => v.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
 
-        modelBuilder.Entity<VehicleComponent>()
-            .HasKey(c => c.ComponentId); // should be renamed to VehicleComponentId to follow convention
+        //modelBuilder.Entity<VehicleComponent>()
+        //    .HasKey(c => c.VehicleComponentId); // should be renamed to VehicleComponentId to follow convention
 
         modelBuilder.Entity<VehicleComponent>()
             .HasOne(c => c.Vehicle)
@@ -49,9 +49,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasForeignKey(mrc => mrc.ComponentId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<LiquidEntry>()
+        modelBuilder.Entity<FuelEntry>()
             .HasOne(le => le.Vehicle)
-            .WithMany(v => v.LiquidEntries)
+            .WithMany(v => v.FuelEntries)
             .HasForeignKey(le => le.VehicleId)
             .OnDelete(DeleteBehavior.Cascade);
 
@@ -59,6 +59,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(p => p.Vehicle)
             .WithMany(v => v.Predictions)
             .HasForeignKey(p => p.VehicleId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Prediction>()
+            .HasOne<VehicleComponent>()
+            .WithMany(c => c.Predictions)
+            .HasForeignKey(p => p.VehicleComponentId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

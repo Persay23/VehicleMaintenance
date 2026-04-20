@@ -158,13 +158,13 @@ namespace VehicleMaintenance.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("VehicleMaintenance.Models.Entities.LiquidEntry", b =>
+            modelBuilder.Entity("VehicleMaintenance.Models.Entities.FuelEntry", b =>
                 {
-                    b.Property<int>("LiquidEntryId")
+                    b.Property<int>("FuelEntryId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LiquidEntryId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FuelEntryId"));
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
@@ -172,7 +172,7 @@ namespace VehicleMaintenance.Migrations
                     b.Property<decimal>("Cost")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("LiquidType")
+                    b.Property<int>("FuelType")
                         .HasColumnType("int");
 
                     b.Property<int>("Mileage")
@@ -187,11 +187,11 @@ namespace VehicleMaintenance.Migrations
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
 
-                    b.HasKey("LiquidEntryId");
+                    b.HasKey("FuelEntryId");
 
                     b.HasIndex("VehicleId");
 
-                    b.ToTable("LiquidEntries");
+                    b.ToTable("FuelEntries");
                 });
 
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.MaintenanceRecord", b =>
@@ -557,10 +557,10 @@ namespace VehicleMaintenance.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("VehicleMaintenance.Models.Entities.LiquidEntry", b =>
+            modelBuilder.Entity("VehicleMaintenance.Models.Entities.FuelEntry", b =>
                 {
                     b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
-                        .WithMany("LiquidEntries")
+                        .WithMany("FuelEntries")
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -656,7 +656,7 @@ namespace VehicleMaintenance.Migrations
 
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.Vehicle", b =>
                 {
-                    b.Navigation("LiquidEntries");
+                    b.Navigation("FuelEntries");
 
                     b.Navigation("MaintenanceRecords");
 

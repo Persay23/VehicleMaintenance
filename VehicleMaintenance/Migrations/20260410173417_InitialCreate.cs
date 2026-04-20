@@ -189,13 +189,13 @@ namespace VehicleMaintenance.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LiquidEntries",
+                name: "FuelEntries",
                 columns: table => new
                 {
-                    LiquidEntryId = table.Column<int>(type: "int", nullable: false)
+                    FuelEntryId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     VehicleId = table.Column<int>(type: "int", nullable: false),
-                    LiquidType = table.Column<int>(type: "int", nullable: false),
+                    FuelType = table.Column<int>(type: "int", nullable: false),
                     RefillDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Cost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
@@ -204,9 +204,9 @@ namespace VehicleMaintenance.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LiquidEntries", x => x.LiquidEntryId);
+                    table.PrimaryKey("PK_FuelEntries", x => x.FuelEntryId);
                     table.ForeignKey(
-                        name: "FK_LiquidEntries_Vehicles_VehicleId",
+                        name: "FK_FuelEntries_Vehicles_VehicleId",
                         column: x => x.VehicleId,
                         principalTable: "Vehicles",
                         principalColumn: "VehicleId",
@@ -381,8 +381,8 @@ namespace VehicleMaintenance.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_LiquidEntries_VehicleId",
-                table: "LiquidEntries",
+                name: "IX_FuelEntries_VehicleId",
+                table: "FuelEntries",
                 column: "VehicleId");
 
             migrationBuilder.CreateIndex(
@@ -445,7 +445,7 @@ namespace VehicleMaintenance.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "LiquidEntries");
+                name: "FuelEntries");
 
             migrationBuilder.DropTable(
                 name: "MaintenanceRecordComponents");
