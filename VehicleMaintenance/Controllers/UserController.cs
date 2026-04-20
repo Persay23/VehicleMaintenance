@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Users;
-using VehicleMaintenance.Services;
+using VehicleMaintenance.Services.Interfaces;
 
 
 namespace VehicleMaintenance.Controllers
@@ -9,21 +9,21 @@ namespace VehicleMaintenance.Controllers
     [ApiController]
     [Route("api/[controller]")]
 
-    public class UsersController(UserService userService) : ControllerBase
+    public class UsersController(IUserService iUserService) : ControllerBase
     {
-        private readonly UserService _userService = userService;
+        private readonly IUserService _iUserService = iUserService;
 
         [HttpGet]
         public async Task<ActionResult<List<UserDto>>> GetUsers()
         {
-            var users = await _userService.GetAllUsersAsync();
+            var users = await _iUserService.GetAllUsersAsync();
             return Ok(users);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUserById(string id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
+            var user = await _iUserService.GetUserByIdAsync(id);
             if (user is null)
             {
                 return NotFound();
@@ -33,16 +33,16 @@ namespace VehicleMaintenance.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<CreateUserDto>> CreateUser(CreateUserDto createUserDto)
+        public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto createUserDto)
         {
-            var createdUser = await _userService.CreateUserAsync(createUserDto);
-            return Ok(createdUser);
+            var createdUser = await _iUserService.CreateUserAsync(createUserDto);
+            return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, createdUser);
         }
 
         [HttpPost("{id}/change-password")]
         public async Task<IActionResult> ChangePassword(string id, ChangePasswordDto dto)
         {
-            var success = await _userService.ChangePasswordAsync(id, dto);
+            var success = await _iUserService.ChangePasswordAsync(id, dto);
             if (!success) return BadRequest(new { message = "Password change failed." });
             return Ok(new { message = "Password changed successfully." });
         }
@@ -50,7 +50,7 @@ namespace VehicleMaintenance.Controllers
         [HttpPatch("{id}")]
         public async Task<ActionResult<UserDto>> UpdateUser(string id, UpdateUserDto dto)
         {
-            var updated = await _userService.UpdateUserByIdAsync(id, dto);
+            var updated = await _iUserService.UpdateUserByIdAsync(id, dto);
             if (updated is null)
             {
                 return NotFound();
@@ -62,7 +62,7 @@ namespace VehicleMaintenance.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
-            var deleted = await _userService.DeleteUserByIdAsync(id);
+            var deleted = await _iUserService.DeleteUserByIdAsync(id);
             if (!deleted) return NotFound();
             return NoContent();
         }

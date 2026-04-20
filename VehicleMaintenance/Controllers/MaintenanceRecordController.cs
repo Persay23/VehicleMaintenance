@@ -2,27 +2,28 @@
 using VehicleMaintenance.DTOs.MaintenanceRecords;
 using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services;
+using VehicleMaintenance.Services.Interfaces;
 
 
 namespace VehicleMaintenance.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MaintenanceRecordController(MaintenanceRecordService maintenanceRecordService) : ControllerBase
+    public class MaintenanceRecordController(IMaintenanceRecordService iMaintenanceRecordService) : ControllerBase // should be IMaintenanceRecordService,
     {
-        private readonly MaintenanceRecordService _maintenanceRecordService = maintenanceRecordService;
+        private readonly IMaintenanceRecordService _iMaintenanceRecordService = iMaintenanceRecordService;
 
         [HttpGet]
         public async Task<ActionResult<List<MaintenanceRecordDto>>> GetMaintenanceRecords()
         {
-            var maintenanceRecords = await _maintenanceRecordService.GetAllMaintenanceRecordsAsync();
+            var maintenanceRecords = await _iMaintenanceRecordService.GetAllMaintenanceRecordsAsync();
             return Ok(maintenanceRecords);
         }
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<MaintenanceRecordDto>> GetMaintenanceRecordById(int id)
         {
-            var record = await _maintenanceRecordService.GetMaintenanceRecordByIdAsync(id);
+            var record = await _iMaintenanceRecordService.GetMaintenanceRecordByIdAsync(id);
             if (record is null)
             {
                 return NotFound();
@@ -34,7 +35,7 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("vehicle/{vehicleId}")]
         public async Task<IActionResult> GetByVehicle(int vehicleId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] string? serviceType)
         {
-            var records = await _maintenanceRecordService.GetByVehicleAsync(
+            var records = await _iMaintenanceRecordService.GetByVehicleAsync(
                 vehicleId, fromDate, toDate, serviceType);
             return Ok(records);
         }
@@ -49,7 +50,7 @@ namespace VehicleMaintenance.Controllers
         [HttpPatch("{id:int}")]
         public async Task<ActionResult<MaintenanceRecordDto>> UpdateMaintenanceRecord(int id, UpdateMaintenanceRecordDto dto)
         {
-            var updated = await _maintenanceRecordService.UpdateMaintenanceRecordByIdAsync(id, dto);
+            var updated = await _iMaintenanceRecordService.UpdateMaintenanceRecordByIdAsync(id, dto);
             if (updated is null)
             {
                 return NotFound();
@@ -61,7 +62,7 @@ namespace VehicleMaintenance.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteMaintenanceRecord(int id)
         {
-            var deleted = await _maintenanceRecordService.DeleteMaintenanceRecordByIdAsync(id);
+            var deleted = await _iMaintenanceRecordService.DeleteMaintenanceRecordByIdAsync(id);
             if (!deleted)
             {
                 return NotFound();
