@@ -9,5 +9,6 @@ namespace VehicleMaintenance.Services.Interfaces
         Task<PredictionDto?> GetPredictionByIdAsync(int id);
         Task<PredictionDto?> UpdatePredictionByIdAsync(int id, UpdatePredictionDto dto);
         Task<bool> DeletePredictionByIdAsync(int id);
+        Task<List<PredictionDto>> GetPredictionsByVehicleAsync(int vehicleId);
     }
 }

@@ -10,6 +10,8 @@ namespace VehicleMaintenance.DTOs.Prediction
         public DateTime? PredictedServiceDate { get; set; }
 
         [Range(0, 100)]
-        public int? ConfidentScore { get; set; }
+        public double? ConfidenceScore { get; set; }
+        public string? Status { get; set; }
+        public DateTime? CompletedAt { get; set; }
     }
 }

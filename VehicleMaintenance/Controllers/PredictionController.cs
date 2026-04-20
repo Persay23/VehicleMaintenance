@@ -29,6 +29,13 @@ namespace VehicleMaintenance.Controllers
             return Ok(prediction);
         }
 
+        [HttpGet("vehicle/{vehicleId:int}")]
+        public async Task<ActionResult<List<PredictionDto>>> GetPredictionsByVehicle(int vehicleId)
+        {
+            var predictions = await _iPredictionService.GetPredictionsByVehicleAsync(vehicleId);
+            return Ok(predictions);
+        }
+
         [HttpPost]
         public async Task<ActionResult<PredictionDto>> CreatePrediction(CreatePredictionDto createPredictionDto)
         {
