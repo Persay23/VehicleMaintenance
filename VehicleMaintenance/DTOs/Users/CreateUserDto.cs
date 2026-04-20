@@ -14,7 +14,7 @@ namespace VehicleMaintenance.DTOs.Users
 
         public int? Age { get; set; }
 
-        [Required]
+        [EnumDataType(typeof(Gender))]
         public string Gender { get; set; } = null!; // e.g., male, female, other
 
         public int? DrivingExperience { get; set; }

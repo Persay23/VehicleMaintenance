@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Services.Interfaces;
 
@@ -65,6 +64,14 @@ namespace VehicleMaintenance.Controllers
             var deleted = await _iUserService.DeleteUserByIdAsync(id);
             if (!deleted) return NotFound();
             return NoContent();
+        }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> Me()
+        {
+            var userDto = await _iUserService.GetCurrentUserAsync(User);
+            if (userDto is null) return Unauthorized();
+            return Ok(userDto);
         }
 
     }

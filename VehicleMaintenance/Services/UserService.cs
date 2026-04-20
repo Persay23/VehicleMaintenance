@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Models.Entities;
@@ -84,5 +86,14 @@ namespace VehicleMaintenance.Services
             var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
             return result.Succeeded;
         }
+
+        public async Task<UserDto?> GetCurrentUserAsync(ClaimsPrincipal principal)
+        {
+            var user = await _userManager.GetUserAsync(principal);
+            if (user is null) return null;
+
+            return _mapper.Map<UserDto>(user);
+        }
     }
+    
 }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using VehicleMaintenance.DTOs.Users;
 
 namespace VehicleMaintenance.Services.Interfaces
@@ -10,5 +11,6 @@ namespace VehicleMaintenance.Services.Interfaces
         Task<UserDto?> UpdateUserByIdAsync(string id, UpdateUserDto dto);
         Task<bool> DeleteUserByIdAsync(string id);
         Task<bool> ChangePasswordAsync(string id, ChangePasswordDto dto);
+        Task<UserDto?> GetCurrentUserAsync(ClaimsPrincipal principal);
     }
 }

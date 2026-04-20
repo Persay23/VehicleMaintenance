@@ -1,6 +1,4 @@
-﻿using VehicleMaintenance.Models.Enums;
-
-namespace VehicleMaintenance.DTOs.Users
+﻿namespace VehicleMaintenance.DTOs.Users
 {
     public class UserDto
     {
