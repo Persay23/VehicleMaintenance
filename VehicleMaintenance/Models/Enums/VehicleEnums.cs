@@ -2,10 +2,13 @@
 {
     public enum VehicleType
     {
-        Disel,
-        Petrol,
-        Electric,
-        Hybrid
+        Sedan, 
+        SUV, 
+        Truck, 
+        Motorcycle, 
+        Van, 
+        Coupe,
+        Hatchback
     }
     public enum TransmissionType
     {
@@ -15,7 +18,9 @@
     public enum EngineType
     {
         InternalCombustion,
-        Electric
+        Electric,
+        Combustion,
+        Hybrid
     }
     public enum FuelType
     {

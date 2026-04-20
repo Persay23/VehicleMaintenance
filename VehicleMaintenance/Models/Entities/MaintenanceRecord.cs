@@ -6,8 +6,7 @@ namespace VehicleMaintenance.Models.Entities
     {
         public int MaintenanceRecordId { get; private set; }
         public int VehicleId { get; set; }
-
-        //public string ServiceName { get; set; } = null!;  // do i need name for the service or is the type enough?
+        public string ServiceName { get; set; } = null!;
         public DateTime ServiceDate { get; set; }
         public ServiceType ServiceType { get; set; } // enum?
         public decimal Cost { get; set; }

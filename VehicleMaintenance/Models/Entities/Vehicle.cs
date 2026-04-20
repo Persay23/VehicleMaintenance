@@ -16,7 +16,7 @@ namespace VehicleMaintenance.Models.Entities
         public int Mileage { get; set; }
         public User User { get; set; } = null!;
         public List<VehicleComponent> VehicleComponents { get; set; } = [];
-        public List<LiquidEntry> LiquidEntries { get; set; } = [];
+        public List<FuelEntry> FuelEntries { get; set; } = [];
         public List<MaintenanceRecord> MaintenanceRecords { get; set; } = [];
         public List<Prediction> Predictions { get; set; } = [];
     }

@@ -8,6 +8,7 @@ namespace VehicleMaintenance.Models.Enums
         Inspected,
         Cleaned,
         Lubricated,
-        Other
+        Other,
+        Changed
     }
 }

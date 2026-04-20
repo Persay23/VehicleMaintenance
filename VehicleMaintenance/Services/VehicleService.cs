@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Models.Enums;
 using System.Linq;
+using Microsoft.Extensions.Configuration.UserSecrets;
 
 namespace VehicleMaintenance.Services
 {
@@ -14,9 +15,10 @@ namespace VehicleMaintenance.Services
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<VehicleDto> CreateVehicleAsync(CreateVehicleDto dto)
+        public async Task<VehicleDto> CreateVehicleAsync(CreateVehicleDto dto, string userId)
         {
             var vehicle = _mapper.Map<Vehicle>(dto);
+            vehicle.UserId = userId;
 
             _context.Vehicles.Add(vehicle);
             await _context.SaveChangesAsync();
@@ -24,9 +26,11 @@ namespace VehicleMaintenance.Services
             return _mapper.Map<VehicleDto>(vehicle);
         }
 
-        public async Task<List<VehicleDto>> GetAllVehiclesAsync()
+        public async Task<List<VehicleDto>> GetAllVehiclesAsync(string userId)
         {
-            var vehicles = await _context.Vehicles.ToListAsync();
+            var vehicles = await _context.Vehicles
+                .Where(v => v.UserId == userId)
+                .ToListAsync();
             return _mapper.Map<List<VehicleDto>>(vehicles);
         }
 
@@ -75,39 +79,36 @@ namespace VehicleMaintenance.Services
             var exists = await _context.Vehicles.AnyAsync(v => v.VehicleId == vehicleId);
             if (!exists) return null;
 
-            // MaintenanceRecords has ServiceDate and Cost - matches your entity
             var maintenanceQuery = _context.MaintenanceRecords
                 .Where(mr => mr.VehicleId == vehicleId);
 
-            // LiquidEntries has RefillDate and Cost - matches your entity
-            var liquidQuery = _context.LiquidEntries
+            var fuelQuery = _context.FuelEntries
                 .Where(le => le.VehicleId == vehicleId);
 
             if (from.HasValue)
             {
                 maintenanceQuery = maintenanceQuery.Where(mr => mr.ServiceDate >= from.Value);
-                liquidQuery = liquidQuery.Where(le => le.RefillDate >= from.Value);
+                fuelQuery = fuelQuery.Where(le => le.RefillDate >= from.Value);
             }
             if (to.HasValue)
             {
                 maintenanceQuery = maintenanceQuery.Where(mr => mr.ServiceDate <= to.Value);
-                liquidQuery = liquidQuery.Where(le => le.RefillDate <= to.Value);
+                fuelQuery = fuelQuery.Where(le => le.RefillDate <= to.Value);
             }
 
             var maintenanceCost = await maintenanceQuery.SumAsync(mr => mr.Cost);
-            var liquidCost = await liquidQuery.SumAsync(le => le.Cost);
+            var fuelCost = await fuelQuery.SumAsync(le => le.Cost);
 
             return new VehicleCostSummaryDto
             {
                 TotalMaintenanceCost = maintenanceCost,
-                TotalLiquidCost = liquidCost,
-                TotalCost = maintenanceCost + liquidCost
+                TotalFuelCost = fuelCost,
+                TotalCost = maintenanceCost + fuelCost
             };
         }
 
         public async Task<List<TimelineEventDto>> GetTimelineAsync(int vehicleId)
         {
-            // ServiceType is an enum - ToString() converts it to readable name
             var maintenance = await _context.MaintenanceRecords
                 .Where(mr => mr.VehicleId == vehicleId)
                 .Select(mr => new TimelineEventDto
@@ -118,19 +119,18 @@ namespace VehicleMaintenance.Services
                     Cost = mr.Cost
                 }).ToListAsync();
 
-            // LiquidType is an enum - ToString() converts it to readable name
-            var liquids = await _context.LiquidEntries
+            var fuels = await _context.FuelEntries
                 .Where(le => le.VehicleId == vehicleId)
                 .Select(le => new TimelineEventDto
                 {
                     Date = le.RefillDate,
-                    Type = "Liquid",
-                    Description = le.LiquidType.ToString(),
+                    Type = "Fuel",
+                    Description = le.FuelType.ToString(),
                     Cost = le.Cost
                 }).ToListAsync();
 
             return [.. maintenance
-                .Concat(liquids)
+                .Concat(fuels)
                 .OrderByDescending(e => e.Date)];
         }
     }

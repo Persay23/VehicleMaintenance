@@ -20,6 +20,16 @@ namespace VehicleMaintenance.Services
             _context.MaintenanceRecords.Add(maintenancerecord);
             await _context.SaveChangesAsync();
 
+            if (dto.PredictionId.HasValue)
+            {
+                var prediction = await _context.Predictions.FindAsync(dto.PredictionId.Value);
+                if (prediction != null)
+                {
+                    prediction.Status = PredictionStatus.Completed;
+                    prediction.CompletedAt = DateTime.UtcNow;
+                }
+            }
+
             return _mapper.Map<MaintenanceRecordDto>(maintenancerecord);
         }
 
@@ -76,13 +86,11 @@ namespace VehicleMaintenance.Services
             var query = _context.MaintenanceRecords
                 .Where(mr => mr.VehicleId == vehicleId);
 
-            // ServiceDate is DateTime on your entity
             if (fromDate.HasValue)
                 query = query.Where(mr => mr.ServiceDate >= fromDate.Value);
             if (toDate.HasValue)
                 query = query.Where(mr => mr.ServiceDate <= toDate.Value);
 
-            // ServiceType is an enum on your entity
             if (!string.IsNullOrWhiteSpace(serviceType))
             {
                 if (Enum.TryParse<ServiceType>(serviceType, true, out var parsedServiceType))

@@ -6,9 +6,10 @@ namespace VehicleMaintenance.Models.Entities
     public class VehicleComponent
     {
         [Key]
-        public int ComponentId { get; private set; } // maybe rename to VehicleComponentId to avoid breaking convention
+        public int VehicleComponentId { get; private set; } 
         public int VehicleId { get; set; }
-        //public string VehicleComponentName { get; set; } = null!;  // do i need name for the component or is the type enough?
+        public string? VehicleComponentName { get; set; }
+        public string? VehicleComponentBrand { get; set; }   // "Brembo", "Varta", "Gates"
         public ComponentType ComponentType { get; set; }
         public DateTime InstallationDate { get; set; }
         public DateTime? LastServiceDate { get; set; }

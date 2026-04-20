@@ -11,7 +11,13 @@
         CoolingSystem,
         FuelSystem,
         Tires,
-        Other // TODO: Must be an option for user to type by himself what kind of component it is, if it's not listed here
+        // add liquids that were added to the vehicle as components, like oil, coolant, etc.
+        Other, // TODO: Must be an option for user to type by himself what kind of component it is, if it's not listed here
+        TimingBelt,
+        Battery,
+        AirFilter,
+        EngineOil,
+        BrakePads
     }
 
     public enum State
@@ -21,6 +27,8 @@
         Normal,
         NeedsService,
         Critical,
-        Unknown
+        Unknown,
+        Warning,
+        Monitor
     }
 }
