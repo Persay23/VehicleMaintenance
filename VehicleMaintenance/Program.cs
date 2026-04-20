@@ -4,6 +4,7 @@ using VehicleMaintenance.Data;
 using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Services;
+using VehicleMaintenance.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,13 +13,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<VehicleService>();
-builder.Services.AddScoped<VehicleComponentService>();
-builder.Services.AddScoped<LiquidEntryService>();
-builder.Services.AddScoped<MaintenanceRecordService>();
-builder.Services.AddScoped<MaintenanceRecordComponentService>();
-builder.Services.AddScoped<PredictionService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IVehicleService, VehicleService>();
+builder.Services.AddScoped<IVehicleComponentService, VehicleComponentService>();
+builder.Services.AddScoped<IFuelEntryService, FuelEntryService>();
+builder.Services.AddScoped<IMaintenanceRecordService, MaintenanceRecordService>();
+builder.Services.AddScoped<IMaintenanceRecordComponentService, MaintenanceRecordComponentService>();
+builder.Services.AddScoped<IPredictionService, PredictionService>();
+builder.Services.AddScoped<DataSeeder>();
+
 
 builder.Services.AddIdentity<User, IdentityRole>(options => //NoOpEmailSender needs to be added
 {
@@ -32,6 +35,13 @@ builder.Services.AddIdentity<User, IdentityRole>(options => //NoOpEmailSender ne
 .AddDefaultTokenProviders()
 .AddDefaultUI();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+});
+
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -41,10 +51,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevPolicy", policy =>
     {
-        policy.WithOrigins("https://localhost:7235;http://localhost:5090")  // add in the future the URL for frontend
-               .AllowAnyHeader()
-               .AllowAnyMethod()
-               .AllowCredentials();
+        policy.WithOrigins(
+            "http://localhost:5090",
+            "https://localhost:7235",
+            "http://localhost:5173"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
@@ -64,5 +78,11 @@ app.UseAuthorization();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
+    await seeder.SeedAsync();
+}
 
 app.Run();
