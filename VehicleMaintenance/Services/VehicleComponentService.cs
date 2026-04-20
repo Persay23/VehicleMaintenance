@@ -31,13 +31,13 @@ namespace VehicleMaintenance.Services
 
         public async Task<VehicleComponentDto?> GetVehicleComponentByIdAsync(int id)
         {
-            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.ComponentId == id);
+            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
             return vehicleComponent is null ? null : _mapper.Map<VehicleComponentDto>(vehicleComponent);
         }
 
         public async Task<VehicleComponentDto?> UpdateVehicleComponentByIdAsync(int id, UpdateVehicleComponentDto dto)
         {
-            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.ComponentId == id);
+            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
             if (vehicleComponent is null)
             {
                 return null;
@@ -46,7 +46,7 @@ namespace VehicleMaintenance.Services
             if (!string.IsNullOrWhiteSpace(dto.ComponentType)) vehicleComponent.ComponentType = Enum.Parse<ComponentType>(dto.ComponentType, true);
             if (dto.InstallationDate.HasValue) vehicleComponent.InstallationDate = dto.InstallationDate.Value;
             if (dto.LastServiceDate.HasValue) vehicleComponent.LastServiceDate = dto.LastServiceDate.Value;
-            if (dto.State.HasValue) vehicleComponent.State = dto.State.Value;
+            if (!string.IsNullOrWhiteSpace(dto.State)) vehicleComponent.State = Enum.Parse<State>(dto.State, true);
             if (dto.Notes is not null) vehicleComponent.Notes = dto.Notes;
             if (dto.CurrentMileage.HasValue) vehicleComponent.CurrentMileage = dto.CurrentMileage.Value;
             if (dto.ExpectedLifetimeKm.HasValue) vehicleComponent.ExpectedLifetimeKm = dto.ExpectedLifetimeKm.Value;
@@ -58,7 +58,7 @@ namespace VehicleMaintenance.Services
 
         public async Task<bool> DeleteVehicleComponentByIdAsync(int id)
         {
-            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.ComponentId == id);
+            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
             if (vehicleComponent is null)
             {
                 return false;
@@ -69,7 +69,7 @@ namespace VehicleMaintenance.Services
             return true;
         }
 
-        public async Task<List<ComponentHealthDto>> GetComponentHealthAsync(int vehicleId)
+        public async Task<List<ComponentHealthDto>> GetComponentHealthAsync(int vehicleId) // dive into this
         {
             var components = await _context.VehicleComponents
                 .Where(c => c.VehicleId == vehicleId)
@@ -99,12 +99,13 @@ namespace VehicleMaintenance.Services
                     <= 15 => "Critical",
                     <= 30 => "Warning",
                     <= 50 => "Monitor",
-                    _ => "Good"
+                    <= 75 => "Good",
+                    _ => "Excelent"
                 };
 
                 return new ComponentHealthDto
                 {
-                    ComponentId = c.ComponentId,
+                    ComponentId = c.VehicleComponentId,
                     ComponentType = c.ComponentType.ToString(),
                     CurrentState = c.State.ToString(), // State enum from your entity
                     RemainingKm = Math.Max(0, remainingKm),

@@ -5,11 +5,11 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecordComponents
 {
     public class UpdateMaintenanceRecordComponentDto
     {
-        public ComponentChangeType? ChangeType { get; set; }
+        public string? ComponentChangeType { get; set; }
         public string? WorkDescription { get; set; }
         public string? ChangedParts { get; set; }
-        public State? OldState { get; set; }
-        public State? NewState { get; set; }
+        public string? OldState { get; set; }
+        public string NewState { get; set; } = null!;
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 

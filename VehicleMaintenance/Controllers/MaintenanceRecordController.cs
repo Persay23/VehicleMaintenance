@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.MaintenanceRecords;
-using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.Interfaces;
-
 
 namespace VehicleMaintenance.Controllers
 {
@@ -43,8 +41,10 @@ namespace VehicleMaintenance.Controllers
         [HttpPost]
         public async Task<ActionResult<MaintenanceRecordDto>> CreateMaintenanceRecord(CreateMaintenanceRecordDto createMaintenanceRecordDto)
         {
-            var createdMaintenanceRecord = await _maintenanceRecordService.CreateMaintenanceRecordAsync(createMaintenanceRecordDto);
-            return Ok(createdMaintenanceRecord);
+            var createdMaintenanceRecord = await _iMaintenanceRecordService.CreateMaintenanceRecordAsync(createMaintenanceRecordDto);
+            return CreatedAtAction(nameof(GetMaintenanceRecordById),
+                new { id = createdMaintenanceRecord.MaintenanceRecordId },
+                createdMaintenanceRecord);
         }
 
         [HttpPatch("{id:int}")]

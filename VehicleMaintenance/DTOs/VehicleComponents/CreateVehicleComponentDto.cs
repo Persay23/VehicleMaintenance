@@ -9,8 +9,9 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
 
         [Required]
         public string ComponentType { get; set; } = null!; // e.g., "Engine", "Brakes", "Tires", "Transmission"
+        public string? VehicleComponentName { get; set; }
+        public string? VehicleComponentBrand { get; set; }
 
-        [Required]
         public DateTime InstallationDate { get; set; }
         public DateTime? LastServiceDate { get; set; }
         public string State { get; set; } = "Unknown"; // default to "Unknown" if not provided, can be "Good", "Fair", "Poor", etc.

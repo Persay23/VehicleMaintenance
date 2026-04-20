@@ -1,19 +1,17 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using VehicleMaintenance.Models.Enums;
 
 namespace VehicleMaintenance.DTOs.Vehicles
-{
+{    
     public class CreateVehicleDto
     {
-        public int UserId { get; set; }
 
         [Required]
-        public required string Brand { get; set; }
+        public string Brand { get; set; } = null!;
 
         [Required]
-        public required string Model { get; set; }
+        public string Model { get; set; } = null!;
 
-        [Range(1886, 2030)]
+        [Range(1886, 2100)]
         public int YearOfProduction { get; set; }
 
         // some of those field are redundant, define which to delete

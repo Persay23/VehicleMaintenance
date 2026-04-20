@@ -12,7 +12,7 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecordComponents
         public int ComponentId { get; set; }
 
         [Required]
-        public ComponentChangeType ChangeType { get; set; }
+        public string ComponentChangeType { get; set; } = null!;
 
         public string? WorkDescription { get; set; }
         public string? ChangedParts { get; set; }// maybe this should be a list of changed parts instead of a string
@@ -22,7 +22,7 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecordComponents
         public DateTime? CompletedAt { get; set; }
 
         [Range(0, int.MaxValue)]
-        public int? LaborMinutes { get; set; }
+        public int? LaborDays { get; set; }
 
         [Range(0, double.MaxValue)]
         public decimal? LaborCost { get; set; }
@@ -37,7 +37,7 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecordComponents
         public decimal? TotalCost { get; set; }
 
         public string? TechnicianName { get; set; }
-        public string? VendorOrShop { get; set; }
+        public string? Vendor { get; set; }
         public string? Notes { get; set; }
     }
 }

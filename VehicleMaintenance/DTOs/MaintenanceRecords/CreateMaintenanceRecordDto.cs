@@ -5,8 +5,9 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecords
 {
     public class CreateMaintenanceRecordDto
     {
-        public int VehicleId { get; set; }                
-        public int? ComponentId { get; set; }
+        public int VehicleId { get; set; }
+        public int? PredictionId { get; set; }
+        public string ServiceName { get; set; } = null!;
 
         [Required]
         public DateTime ServiceDate { get; set; }

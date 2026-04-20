@@ -1,10 +1,11 @@
-﻿using VehicleMaintenance.Models.Enums;
-
+﻿
 namespace VehicleMaintenance.DTOs.VehicleComponents
 {
     public class ComponentHealthDto
     {
         public int ComponentId { get; set; }
+        public string? VehicleComponentName { get; set; }
+        public string? VehicleComponentBrand { get; set; }
         public string ComponentType { get; set; } = null!;
         public string CurrentState { get; set; } = null!;
         public int RemainingKm { get; set; }

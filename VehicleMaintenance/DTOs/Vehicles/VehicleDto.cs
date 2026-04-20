@@ -5,7 +5,7 @@ namespace VehicleMaintenance.DTOs.Vehicles
     public class VehicleDto
     {
         public int VehicleId { get; set; }
-        public int UserId { get; set; }
+        public string UserId { get; set; } = null!;
         public string Brand { get; set; } = null!;
         public string Model { get; set; } = null!;
         public int YearOfProduction { get; set; }

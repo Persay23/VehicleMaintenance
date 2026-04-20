@@ -4,8 +4,10 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
 {
     public class VehicleComponentDto
     {
-        public int ComponentId { get; set; }
+        public int VehicleComponentId { get; set; }
         public int VehicleId { get; set; }
+        public string? VehicleComponentName { get; set; }
+        public string? VehicleComponentBrand { get; set; }
         public string ComponentType { get; set; } = null!; // e.g., "Engine", "Brakes", "Tires", "Transmission"
         public DateTime InstallationDate { get; set; }
         public DateTime? LastServiceDate { get; set; }
