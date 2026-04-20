@@ -2,11 +2,13 @@
 
 namespace VehicleMaintenance.Models.Entities
 {
-    public class LiquidEntry
+    public class FuelEntry
     {
-        public int LiquidEntryId { get; private set; }
+        public int FuelEntryId { get; private set; }
         public int VehicleId { get; set; }
-        public LiquidType LiquidType { get; set; } // should serve as a name?
+        public string? Name { get; set; }
+        public string? Brand { get; set; }
+        public FuelType FuelType { get; set; }
         public DateTime RefillDate { get; set; }
         public decimal Amount { get; set; } // liters
         public decimal Cost { get; set; }

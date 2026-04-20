@@ -1,11 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using VehicleMaintenance.Models.Enums;
 
-namespace VehicleMaintenance.DTOs.LiquidEntry
+namespace VehicleMaintenance.DTOs.FuelEntry
 {
-    public class UpdateLiquidEntryDto
+    public class UpdateFuelEntryDto
     {
-        public string? LiquidType { get; set; }
+        public string? FuelType { get; set; }
+        public string? Name { get; set; }
+        public string? Brand { get; set; }
         public DateTime? RefillDate { get; set; }
         public decimal? Amount { get; set; }
 

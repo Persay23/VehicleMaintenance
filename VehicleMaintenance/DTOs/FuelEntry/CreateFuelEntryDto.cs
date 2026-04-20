@@ -1,19 +1,18 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using VehicleMaintenance.Models.Enums;
 
-namespace VehicleMaintenance.DTOs.LiquidEntry
+namespace VehicleMaintenance.DTOs.FuelEntry
 {
-    public class CreateLiquidEntryDto
+    public class CreateFuelEntryDto
     {
         public int VehicleId { get; set; }
+        public string? Name { get; set; }
+        public string? Brand { get; set; }
 
         [Required]
-        public string LiquidType { get; set; } = null!; // e.g., "Engine Oil", "Coolant", "Brake Fluid"
+        public string FuelType { get; set; } = null!; // e.g., Gasoline, Diesel, Petrol
 
-        [Required]
         public DateTime RefillDate { get; set; }
 
-        [Required]
         public decimal Amount { get; set; }
 
         [Range(0, double.MaxValue)]
