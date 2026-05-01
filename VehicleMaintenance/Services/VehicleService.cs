@@ -5,8 +5,6 @@ using VehicleMaintenance.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Models.Enums;
-using System.Linq;
-using Microsoft.Extensions.Configuration.UserSecrets;
 
 namespace VehicleMaintenance.Services
 {
@@ -74,37 +72,49 @@ namespace VehicleMaintenance.Services
             return true;
         }
 
-        public async Task<VehicleCostSummaryDto?> GetCostSummaryAsync(int vehicleId, DateTime? from, DateTime? to)
+        public async Task<List<MonthlyCostDto>> GetCostSummaryAsync(int vehicleId, DateTime? from, DateTime? to)
         {
-            var exists = await _context.Vehicles.AnyAsync(v => v.VehicleId == vehicleId);
-            if (!exists) return null;
+            var fromDate = from ?? DateTime.UtcNow.AddMonths(-6);
+            var toDate = to ?? DateTime.UtcNow;
 
-            var maintenanceQuery = _context.MaintenanceRecords
-                .Where(mr => mr.VehicleId == vehicleId);
+            var records = await _context.MaintenanceRecords
+                .Where(r => r.VehicleId == vehicleId
+                         && r.ServiceDate >= fromDate
+                         && r.ServiceDate <= toDate)
+                .GroupBy(r => new { r.ServiceDate.Year, r.ServiceDate.Month })
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    MaintenanceCost = g.Sum(r => r.Cost)
+                })
+                .ToListAsync();
 
-            var fuelQuery = _context.FuelEntries
-                .Where(le => le.VehicleId == vehicleId);
+            var fuel = await _context.FuelEntries
+                .Where(f => f.VehicleId == vehicleId
+                         && f.RefillDate >= fromDate
+                         && f.RefillDate <= toDate)
+                .GroupBy(f => new { f.RefillDate.Year, f.RefillDate.Month })
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    FuelCost = g.Sum(f => f.Cost)
+                })
+                .ToListAsync();
 
-            if (from.HasValue)
+            // Merge by year+month
+            var months = records.Select(r => (r.Year, r.Month))
+                .Union(fuel.Select(f => (f.Year, f.Month)))
+                .Distinct()
+                .OrderBy(m => m.Year).ThenBy(m => m.Month);
+
+            return [.. months.Select(m => new MonthlyCostDto
             {
-                maintenanceQuery = maintenanceQuery.Where(mr => mr.ServiceDate >= from.Value);
-                fuelQuery = fuelQuery.Where(le => le.RefillDate >= from.Value);
-            }
-            if (to.HasValue)
-            {
-                maintenanceQuery = maintenanceQuery.Where(mr => mr.ServiceDate <= to.Value);
-                fuelQuery = fuelQuery.Where(le => le.RefillDate <= to.Value);
-            }
-
-            var maintenanceCost = await maintenanceQuery.SumAsync(mr => mr.Cost);
-            var fuelCost = await fuelQuery.SumAsync(le => le.Cost);
-
-            return new VehicleCostSummaryDto
-            {
-                TotalMaintenanceCost = maintenanceCost,
-                TotalFuelCost = fuelCost,
-                TotalCost = maintenanceCost + fuelCost
-            };
+                Month = new DateTime(m.Year, m.Month, 1),
+                MaintenanceCost = records.FirstOrDefault(r => r.Year == m.Year && r.Month == m.Month)?.MaintenanceCost ?? 0,
+                FuelCost = fuel.FirstOrDefault(f => f.Year == m.Year && f.Month == m.Month)?.FuelCost ?? 0,
+            })];
         }
 
         public async Task<List<TimelineEventDto>> GetTimelineAsync(int vehicleId)
