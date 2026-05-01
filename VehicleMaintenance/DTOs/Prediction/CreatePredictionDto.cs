@@ -7,6 +7,8 @@ namespace VehicleMaintenance.DTOs.Prediction
     public class CreatePredictionDto
     {
         public int VehicleId { get; set; }
+        [Required]
+        public int VehicleComponentId { get; set; }
 
         [Required]
         public string Name { get; set; } = null!;
@@ -20,7 +22,6 @@ namespace VehicleMaintenance.DTOs.Prediction
         [Range(0, 100)]
         public double ConfidenceScore { get; set; }
         public DateTime CreatedAt { get; set; }
-        //public string Status { get; set; } = PredictionStatus.Active.ToString(); // already set in Prediction entity
         public DateTime? CompletedAt { get; set; }
     }
 }

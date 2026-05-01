@@ -21,6 +21,13 @@ namespace VehicleMaintenance.Services
             _context.FuelEntries.Add(FuelEntry);
             await _context.SaveChangesAsync();
 
+            var vehicle = await _context.Vehicles.FindAsync(dto.VehicleId);
+            if (vehicle != null && dto.Mileage > vehicle.Mileage)
+            {
+                vehicle.Mileage = dto.Mileage;
+                await _context.SaveChangesAsync();
+            }
+
             return _mapper.Map<FuelEntryDto>(FuelEntry);
         }
 
@@ -48,7 +55,13 @@ namespace VehicleMaintenance.Services
             if (dto.RefillDate.HasValue) fuelEntry.RefillDate = dto.RefillDate.Value;
             if (dto.Amount.HasValue) fuelEntry.Amount = dto.Amount.Value;
             if (dto.Cost.HasValue) fuelEntry.Cost = dto.Cost.Value;
-            if (dto.Mileage.HasValue) fuelEntry.Mileage = dto.Mileage.Value;
+            if (dto.Mileage.HasValue)
+            {
+                fuelEntry.Mileage = dto.Mileage.Value;
+                var vehicle = await _context.Vehicles.FindAsync(fuelEntry.VehicleId);
+                if (vehicle != null && dto.Mileage.Value > vehicle.Mileage)
+                    vehicle.Mileage = dto.Mileage.Value;
+            }
             if (dto.Notes is not null) fuelEntry.Notes = dto.Notes;
 
             await _context.SaveChangesAsync();
