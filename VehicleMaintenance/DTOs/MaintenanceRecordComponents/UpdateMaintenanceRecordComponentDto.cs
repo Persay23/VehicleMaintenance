@@ -28,8 +28,12 @@ namespace VehicleMaintenance.DTOs.MaintenanceRecordComponents
         [Range(0, double.MaxValue)]
         public decimal? TotalCost { get; set; }
 
-        public string? TechnicianName { get; set; }
-        public string? Vendor { get; set; }
-        public string? Notes { get; set; }
+        public string? CustomerComplaint { get; set; }
+
+        [Range(0, int.MaxValue)]
+        public int? ExpectedLifetimeKm { get; set; }
+
+        [Range(0, 50)]
+        public int? ExpectedLifetimeYears { get; set; }
     }
 }

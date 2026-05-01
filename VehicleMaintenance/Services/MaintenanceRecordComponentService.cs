@@ -16,22 +16,53 @@ namespace VehicleMaintenance.Services
         public async Task<MaintenanceRecordComponentDto> CreateMaintenanceRecordComponentAsync(CreateMaintenanceRecordComponentDto dto)
         {
             var maintenanceRecordComponent = _mapper.Map<MaintenanceRecordComponent>(dto);
-
             _context.MaintenanceRecordComponents.Add(maintenanceRecordComponent);
             await _context.SaveChangesAsync();
 
+            //   Auto-patch the VehicleComponent
+            var component = await _context.VehicleComponents
+                .FindAsync(dto.ComponentId);
+
+            if (component != null)
+            {
+                // Always update state and last service date
+                if (!string.IsNullOrEmpty(dto.NewState))
+                    component.State = Enum.Parse<State>(dto.NewState, true);
+
+                // Get the parent record's date
+                var record = await _context.MaintenanceRecords
+                    .FindAsync(dto.MaintenanceRecordId);
+
+                if (record != null)
+                    component.LastServiceDate = record.ServiceDate;
+
+                // On replacement — reset mileage and installation date
+                if (Enum.Parse<ComponentChangeType>(dto.ComponentChangeType, true) == ComponentChangeType.Replaced)
+                {
+                    component.CurrentMileage = 0;
+                    if (record != null)
+                        component.InstallationDate = record.ServiceDate;
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            await _context.Entry(maintenanceRecordComponent).Reference(e => e.Component).LoadAsync();
             return _mapper.Map<MaintenanceRecordComponentDto>(maintenanceRecordComponent);
         }
 
         public async Task<List<MaintenanceRecordComponentDto>> GetAllMaintenanceRecordComponentsAsync()
         {
-            var maintenanceRecordComponents = await _context.MaintenanceRecordComponents.ToListAsync();
+            var maintenanceRecordComponents = await _context.MaintenanceRecordComponents
+                .Include(mrc => mrc.Component)
+                .ToListAsync();
             return _mapper.Map<List<MaintenanceRecordComponentDto>>(maintenanceRecordComponents);
         }
 
         public async Task<MaintenanceRecordComponentDto?> GetMaintenanceRecordComponentByIdAsync(int id)
         {
             var maintenanceRecordComponent = await _context.MaintenanceRecordComponents
+                .Include(mrc => mrc.Component)
                 .FirstOrDefaultAsync(mrc => mrc.MaintenanceRecordComponentId == id);
             return maintenanceRecordComponent is null ? null : _mapper.Map<MaintenanceRecordComponentDto>(maintenanceRecordComponent);
         }
@@ -39,6 +70,7 @@ namespace VehicleMaintenance.Services
         public async Task<MaintenanceRecordComponentDto?> UpdateMaintenanceRecordComponentByIdAsync(int id, UpdateMaintenanceRecordComponentDto dto)
         {
             var maintenanceRecordComponent = await _context.MaintenanceRecordComponents
+                .Include(mrc => mrc.Component)
                 .FirstOrDefaultAsync(mrc => mrc.MaintenanceRecordComponentId == id);
             if (maintenanceRecordComponent is null)
             {
@@ -57,10 +89,18 @@ namespace VehicleMaintenance.Services
             if (dto.PartsCost.HasValue) maintenanceRecordComponent.PartsCost = dto.PartsCost.Value;
             if (dto.OtherCost.HasValue) maintenanceRecordComponent.OtherCost = dto.OtherCost.Value;
             if (dto.TotalCost.HasValue) maintenanceRecordComponent.TotalCost = dto.TotalCost.Value;
-            if (dto.TechnicianName is not null) maintenanceRecordComponent.TechnicianName = dto.TechnicianName;
-            if (dto.Vendor is not null) maintenanceRecordComponent.Vendor = dto.Vendor;
-            if (dto.Notes is not null) maintenanceRecordComponent.Notes = dto.Notes;
+            if (dto.CustomerComplaint is not null) maintenanceRecordComponent.CustomerComplaint = dto.CustomerComplaint;
+            if (dto.ExpectedLifetimeKm.HasValue) maintenanceRecordComponent.ExpectedLifetimeKm = dto.ExpectedLifetimeKm.Value;
+            if (dto.ExpectedLifetimeYears.HasValue) maintenanceRecordComponent.ExpectedLifetimeYears = dto.ExpectedLifetimeYears.Value;
             maintenanceRecordComponent.UpdatedAt = DateTime.UtcNow;
+
+            if (maintenanceRecordComponent.ComponentChangeType == ComponentChangeType.Replaced)
+            {
+                var component = await _context.VehicleComponents.FindAsync(maintenanceRecordComponent.ComponentId);
+                var record = await _context.MaintenanceRecords.FindAsync(maintenanceRecordComponent.MaintenanceRecordId);
+                if (component != null && record != null)
+                    component.InstallationDate = record.ServiceDate;
+            }
 
             await _context.SaveChangesAsync();
             return _mapper.Map<MaintenanceRecordComponentDto>(maintenanceRecordComponent);

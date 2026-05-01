@@ -7,7 +7,7 @@ namespace VehicleMaintenance.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class MaintenanceRecordController(IMaintenanceRecordService iMaintenanceRecordService) : ControllerBase // should be IMaintenanceRecordService,
+    public class MaintenanceRecordController(IMaintenanceRecordService iMaintenanceRecordService) : ControllerBase
     {
         private readonly IMaintenanceRecordService _iMaintenanceRecordService = iMaintenanceRecordService;
 
