@@ -8,6 +8,7 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
         public string? VehicleComponentBrand { get; set; }
         public string ComponentType { get; set; } = null!;
         public string CurrentState { get; set; } = null!;
+        public DateTime InstallationDate { get; set; }
         public int RemainingKm { get; set; }
         public double KmLifetimePercent { get; set; }
         public double YearsLifetimePercent { get; set; }

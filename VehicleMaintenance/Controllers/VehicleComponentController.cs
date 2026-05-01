@@ -31,6 +31,21 @@ namespace VehicleMaintenance.Controllers
             return Ok(health);
         }
 
+        [HttpGet("vehicle/{vehicleId}")]
+        public async Task<ActionResult<List<VehicleComponentDto>>> GetByVehicle(int vehicleId)
+        {
+            var components = await _iVehicleComponentService.GetByVehicleAsync(vehicleId);
+            return Ok(components);
+        }
+
+        [HttpGet("{id:int}/history")]
+        public async Task<ActionResult<List<ComponentHistoryDto>>> GetComponentHistory(int id)
+        {
+            var history = await _iVehicleComponentService.GetComponentHistoryAsync(id);
+            return Ok(history);
+        }
+
+
         /// <summary>
         /// 
         /// </summary>

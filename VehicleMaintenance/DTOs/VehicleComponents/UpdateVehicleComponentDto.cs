@@ -21,5 +21,11 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
 
         [Range(0, 50)]
         public int? ExpectedLifetimeYears { get; set; }
+
+        public string? PartNumber { get; set; }
+        public int? WarrantyKm { get; set; }
+        public DateTime? WarrantyDate { get; set; }
+        public int? NextServiceRecommendedKm { get; set; }
+        public DateTime? NextServiceRecommendedDate { get; set; }
     }
 }

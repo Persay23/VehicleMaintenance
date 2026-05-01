@@ -81,7 +81,7 @@ namespace VehicleMaintenance.Tests.Services
             var component = new VehicleComponent
             {
                 VehicleId = 1,
-                ComponentType = ComponentType.Tires,
+                ComponentType = ComponentType.Tyres,
                 InstallationDate = DateTime.UtcNow,
                 State = State.Good
             };
@@ -92,7 +92,7 @@ namespace VehicleMaintenance.Tests.Services
             var result = await service.GetVehicleComponentByIdAsync(component.VehicleComponentId);
 
             result.Should().NotBeNull();
-            result!.ComponentType.Should().Be("Tires");
+            result!.ComponentType.Should().Be("Tyres");
         }
 
         [Fact]

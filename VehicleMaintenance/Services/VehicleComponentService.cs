@@ -1,10 +1,11 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Models.Entities;
-using Microsoft.EntityFrameworkCore;
-using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services
 {
@@ -21,6 +22,14 @@ namespace VehicleMaintenance.Services
             await _context.SaveChangesAsync();
 
             return _mapper.Map<VehicleComponentDto>(vehilcecomponent);
+        }
+
+        public async Task<List<VehicleComponentDto>> GetByVehicleAsync(int vehicleId)
+        {
+            var components = await _context.VehicleComponents
+                .Where(vc => vc.VehicleId == vehicleId)
+                .ToListAsync();
+            return _mapper.Map<List<VehicleComponentDto>>(components);
         }
 
         public async Task<List<VehicleComponentDto>> GetAllVehicleComponentsAsync()
@@ -43,6 +52,8 @@ namespace VehicleMaintenance.Services
                 return null;
             }
 
+            if (!string.IsNullOrWhiteSpace(dto.VehicleComponentName)) vehicleComponent.VehicleComponentName = dto.VehicleComponentName;
+            if (!string.IsNullOrWhiteSpace(dto.VehicleComponentBrand)) vehicleComponent.VehicleComponentBrand = dto.VehicleComponentBrand;
             if (!string.IsNullOrWhiteSpace(dto.ComponentType)) vehicleComponent.ComponentType = Enum.Parse<ComponentType>(dto.ComponentType, true);
             if (dto.InstallationDate.HasValue) vehicleComponent.InstallationDate = dto.InstallationDate.Value;
             if (dto.LastServiceDate.HasValue) vehicleComponent.LastServiceDate = dto.LastServiceDate.Value;
@@ -51,20 +62,41 @@ namespace VehicleMaintenance.Services
             if (dto.CurrentMileage.HasValue) vehicleComponent.CurrentMileage = dto.CurrentMileage.Value;
             if (dto.ExpectedLifetimeKm.HasValue) vehicleComponent.ExpectedLifetimeKm = dto.ExpectedLifetimeKm.Value;
             if (dto.ExpectedLifetimeYears.HasValue) vehicleComponent.ExpectedLifetimeYears = dto.ExpectedLifetimeYears.Value;
+            if (dto.PartNumber is not null) vehicleComponent.PartNumber = dto.PartNumber;
+            if (dto.WarrantyKm.HasValue) vehicleComponent.WarrantyKm = dto.WarrantyKm.Value;
+            if (dto.WarrantyDate.HasValue) vehicleComponent.WarrantyDate = dto.WarrantyDate.Value;
+            if (dto.NextServiceRecommendedKm.HasValue) vehicleComponent.NextServiceRecommendedKm = dto.NextServiceRecommendedKm.Value;
+            if (dto.NextServiceRecommendedDate.HasValue) vehicleComponent.NextServiceRecommendedDate = dto.NextServiceRecommendedDate.Value;
 
             await _context.SaveChangesAsync();
             return _mapper.Map<VehicleComponentDto>(vehicleComponent);
         }
 
-        public async Task<bool> DeleteVehicleComponentByIdAsync(int id)
+        public async Task<bool> DeleteVehicleComponentByIdAsync(int id)  // dive into this
         {
-            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
-            if (vehicleComponent is null)
-            {
-                return false;
-            }
+            var component = await _context.VehicleComponents
+                .FirstOrDefaultAsync(c => c.VehicleComponentId == id);
 
-            _context.VehicleComponents.Remove(vehicleComponent);
+            if (component is null) return false;
+
+            // Delete linked MaintenanceRecordComponents first
+            // because the FK is NoAction — SQL won't cascade automatically
+            var linkedRecords = await _context.MaintenanceRecordComponents
+                .Where(mrc => mrc.ComponentId == id)
+                .ToListAsync();
+
+            if (linkedRecords.Count != 0)
+                _context.MaintenanceRecordComponents.RemoveRange(linkedRecords);
+
+            // Also clear any predictions linked to this component
+            var linkedPredictions = await _context.Predictions
+                .Where(p => p.VehicleComponentId == id)
+                .ToListAsync();
+
+            if (linkedPredictions.Count != 0)
+                _context.Predictions.RemoveRange(linkedPredictions);
+
+            _context.VehicleComponents.Remove(component);
             await _context.SaveChangesAsync();
             return true;
         }
@@ -106,13 +138,50 @@ namespace VehicleMaintenance.Services
                 return new ComponentHealthDto
                 {
                     ComponentId = c.VehicleComponentId,
+                    VehicleComponentName = c.VehicleComponentName,
+                    VehicleComponentBrand = c.VehicleComponentBrand,
                     ComponentType = c.ComponentType.ToString(),
-                    CurrentState = c.State.ToString(), // State enum from your entity
+                    CurrentState = c.State.ToString(),
+                    InstallationDate = c.InstallationDate,
                     RemainingKm = Math.Max(0, remainingKm),
                     KmLifetimePercent = Math.Round(kmPercent, 1),
                     YearsLifetimePercent = Math.Round(yearsPercent, 1),
-                    Status = status
+                    Status = status,
                 };
+            })];
+        }
+
+        public async Task<List<ComponentHistoryDto>> GetComponentHistoryAsync(int componentId)
+        {
+            var items = await _context.MaintenanceRecordComponents
+                .Where(mrc => mrc.ComponentId == componentId)
+                .Include(mrc => mrc.MaintenanceRecord)
+                .OrderByDescending(mrc => mrc.MaintenanceRecord.ServiceDate)
+                .ToListAsync();
+
+            return [.. items.Select(mrc => new ComponentHistoryDto
+            {
+                MaintenanceRecordComponentId = mrc.MaintenanceRecordComponentId,
+                MaintenanceRecordId = mrc.MaintenanceRecordId,
+                ServiceDate = mrc.MaintenanceRecord.ServiceDate,
+                ServiceName = mrc.MaintenanceRecord.ServiceName,
+                ServiceType = mrc.MaintenanceRecord.ServiceType.ToString(),
+                Mileage = mrc.MaintenanceRecord.Mileage,
+                TechnicianName = mrc.MaintenanceRecord.TechnicianName,
+                Notes = mrc.MaintenanceRecord.Notes,
+                ComponentChangeType = mrc.ComponentChangeType.ToString(),
+                CustomerComplaint = mrc.CustomerComplaint,
+                WorkDescription = mrc.WorkDescription,
+                ChangedParts = mrc.ChangedParts,
+                OldState = mrc.OldState.ToString(),
+                NewState = mrc.NewState.ToString(),
+                ExpectedLifetimeKm = mrc.ExpectedLifetimeKm,
+                ExpectedLifetimeYears = mrc.ExpectedLifetimeYears,
+                LaborCost = mrc.LaborCost,
+                PartsCost = mrc.PartsCost,
+                OtherCost = mrc.OtherCost,
+                TotalCost = mrc.TotalCost,
+                CreatedAt = mrc.CreatedAt,
             })];
         }
     }

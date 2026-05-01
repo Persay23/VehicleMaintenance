@@ -16,5 +16,10 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
         public int CurrentMileage { get; set; }
         public int ExpectedLifetimeKm { get; set; } // in km
         public int ExpectedLifetimeYears { get; set; } // in years or maybe days/months
+        public string? PartNumber { get; set; }
+        public int? WarrantyKm { get; set; }
+        public DateTime? WarrantyDate { get; set; }
+        public int? NextServiceRecommendedKm { get; set; }
+        public DateTime? NextServiceRecommendedDate { get; set; }
     }
 }

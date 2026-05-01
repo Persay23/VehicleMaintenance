@@ -10,5 +10,7 @@ namespace VehicleMaintenance.Services.Interfaces
         Task<VehicleComponentDto?> UpdateVehicleComponentByIdAsync(int id, UpdateVehicleComponentDto dto);
         Task<bool> DeleteVehicleComponentByIdAsync(int id);
         Task<List<ComponentHealthDto>> GetComponentHealthAsync(int vehicleId);
+        Task<List<VehicleComponentDto>> GetByVehicleAsync(int vehicleId);
+        Task<List<ComponentHistoryDto>> GetComponentHistoryAsync(int componentId);
     }
 }
