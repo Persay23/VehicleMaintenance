@@ -2,31 +2,63 @@
 {
     public enum VehicleType
     {
-        Sedan, 
-        SUV, 
-        Truck, 
-        Motorcycle, 
-        Van, 
+        // Cars
+        Sedan,
+        Hatchback,
+        Estate,      // also called Wagon or Combi
         Coupe,
-        Hatchback
+        Convertible,
+        SUV,
+        Crossover,
+        MPV,         // Minivan / People Carrier
+
+        // Working vehicles
+        Pickup,
+        Van,
+        Truck,
+        Bus,
+
+        // Two-wheelers
+        Motorcycle,
+        Scooter,
+        Moped,
+
+        Other
     }
+
     public enum TransmissionType
     {
         Manual,
-        Automatic
+        Automatic,
+        SemiAutomatic,
+        CVT,          // Continuously Variable Transmission
+        DCT,          // Dual Clutch Transmission
+        Other
     }
+
     public enum EngineType
     {
-        InternalCombustion,
-        Electric,
-        Combustion,
-        Hybrid
+        Petrol,
+        Diesel,
+        FullElectric,
+        Hybrid,       // non-plug-in (self-charging)
+        PlugInHybrid,
+        Hydrogen,
+        Other
     }
+
     public enum FuelType
     {
-        Petrol,
-        Gasoline,
+        Petrol95,
+        Petrol98,
         Diesel,
-        Electric
+        PremiumDiesel,
+        LPG,          // Liquefied Petroleum Gas
+        CNG,          // Compressed Natural Gas
+        Electric,     // for EVs/charging events
+        Hydrogen,
+        E85,          // Bioethanol blend
+        Other
     }
+
 }

@@ -1,34 +1,29 @@
 ﻿namespace VehicleMaintenance.Models.Enums
 {
+
     public enum ComponentType
     {
-        Engine,
-        Transmission,
-        Brakes,
-        Suspension,
-        Exhaust,
-        Electrical,
-        CoolingSystem,
-        FuelSystem,
-        Tires,
-        // add liquids that were added to the vehicle as components, like oil, coolant, etc.
-        Other, // TODO: Must be an option for user to type by himself what kind of component it is, if it's not listed here
-        TimingBelt,
-        Battery,
-        AirFilter,
-        EngineOil,
-        BrakePads
+        Engine,         // spark plugs, timing belt, pistons, valves, oil
+        Transmission,   // gearbox, clutch, flywheel, driveshaft, differential
+        Brakes,         // pads, discs, calipers, brake fluid, ABS
+        Suspension,     // shock absorbers, springs, ball joints, tie rods, bearings
+        Electrical,     // battery, alternator, starter, fuses, sensors, lighting
+        Cooling,        // radiator, water pump, thermostat, coolant, cooling fan
+        Fuel,           // fuel pump, injectors, fuel filter, fuel lines
+        Exhaust,        // exhaust pipe, catalytic converter, DPF, EGR, lambda sensor
+        Tyres,          // tyres, wheels, TPMS, wheel alignment
+        Body,           // windshield, wipers, mirrors, locks, AC, interior\
+        Other
     }
+
 
     public enum State
     {
-        New,
+        Perfect,
         Good,
         Normal,
-        NeedsService,
+        Repair,
         Critical,
-        Unknown,
-        Warning,
-        Monitor
+        Unknown
     }
 }
