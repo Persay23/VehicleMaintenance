@@ -35,7 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(mr => mr.Vehicle)
             .WithMany(v => v.MaintenanceRecords)
             .HasForeignKey(mr => mr.VehicleId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<MaintenanceRecordComponent>()
             .HasOne(mrc => mrc.MaintenanceRecord)
