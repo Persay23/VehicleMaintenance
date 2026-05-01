@@ -18,6 +18,14 @@ namespace VehicleMaintenance.Services
             var maintenancerecord = _mapper.Map<MaintenanceRecord>(dto);
 
             _context.MaintenanceRecords.Add(maintenancerecord);
+
+            if (dto.Mileage.HasValue)
+            {
+                var vehicle = await _context.Vehicles.FindAsync(dto.VehicleId);
+                if (vehicle != null && dto.Mileage.Value > vehicle.Mileage)
+                    vehicle.Mileage = dto.Mileage.Value;
+            }
+
             await _context.SaveChangesAsync();
 
             if (dto.PredictionId.HasValue)
@@ -27,6 +35,7 @@ namespace VehicleMaintenance.Services
                 {
                     prediction.Status = PredictionStatus.Completed;
                     prediction.CompletedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
                 }
             }
 
@@ -37,6 +46,7 @@ namespace VehicleMaintenance.Services
         {
             var maintenanceRecords = await _context.MaintenanceRecords
                 .Include(mr => mr.MaintenanceRecordComponents)
+                    .ThenInclude(mrc => mrc.Component)
                 .ToListAsync();
             return _mapper.Map<List<MaintenanceRecordDto>>(maintenanceRecords);
         }
@@ -45,6 +55,7 @@ namespace VehicleMaintenance.Services
         {
             var maintenanceRecord = await _context.MaintenanceRecords
                 .Include(mr => mr.MaintenanceRecordComponents)
+                    .ThenInclude(mrc => mrc.Component)
                 .FirstOrDefaultAsync(mr => mr.MaintenanceRecordId == id);
             return maintenanceRecord is null ? null : _mapper.Map<MaintenanceRecordDto>(maintenanceRecord);
         }
@@ -53,16 +64,33 @@ namespace VehicleMaintenance.Services
         {
             var maintenanceRecord = await _context.MaintenanceRecords
                 .Include(mr => mr.MaintenanceRecordComponents)
+                    .ThenInclude(mrc => mrc.Component)
                 .FirstOrDefaultAsync(mr => mr.MaintenanceRecordId == id);
             if (maintenanceRecord is null)
             {
                 return null;
             }
 
+            if (dto.ServiceName is not null) maintenanceRecord.ServiceName = dto.ServiceName;
             if (dto.ServiceDate.HasValue) maintenanceRecord.ServiceDate = dto.ServiceDate.Value;
+            if (dto.StartedAt.HasValue) maintenanceRecord.StartedAt = dto.StartedAt.Value;
+            if (dto.CompletedAt.HasValue) maintenanceRecord.CompletedAt = dto.CompletedAt.Value;
+            if (dto.LaborDays.HasValue) maintenanceRecord.LaborDays = dto.LaborDays.Value;
             if (!string.IsNullOrWhiteSpace(dto.ServiceType)) maintenanceRecord.ServiceType = Enum.Parse<ServiceType>(dto.ServiceType, true);
+            if (dto.Mileage.HasValue)
+            {
+                maintenanceRecord.Mileage = dto.Mileage.Value;
+                var vehicle = await _context.Vehicles.FindAsync(maintenanceRecord.VehicleId);
+                if (vehicle != null && dto.Mileage.Value > vehicle.Mileage)
+                    vehicle.Mileage = dto.Mileage.Value;
+            }
             if (dto.Cost.HasValue) maintenanceRecord.Cost = dto.Cost.Value;
             if (dto.Description is not null) maintenanceRecord.Description = dto.Description;
+            if (dto.TechnicianName is not null) maintenanceRecord.TechnicianName = dto.TechnicianName;
+            if (dto.VendorOrShop is not null) maintenanceRecord.VendorOrShop = dto.VendorOrShop;
+            if (dto.Notes is not null) maintenanceRecord.Notes = dto.Notes;
+            if (dto.InvoiceNumber is not null) maintenanceRecord.InvoiceNumber = dto.InvoiceNumber;
+            if (dto.InvoiceImageUrl is not null) maintenanceRecord.InvoiceImageUrl = dto.InvoiceImageUrl;
 
             await _context.SaveChangesAsync();
             return _mapper.Map<MaintenanceRecordDto>(maintenanceRecord);
@@ -97,10 +125,15 @@ namespace VehicleMaintenance.Services
                 {
                     query = query.Where(mr => mr.ServiceType == parsedServiceType);
                 }
-                // else: invalid value — choose to ignore, return an error, or log as needed
+                else
+                {
+                    return [];
+                }
             }
 
             var records = await query
+                .Include(mr => mr.MaintenanceRecordComponents)
+                    .ThenInclude(mrc => mrc.Component)
                 .OrderByDescending(mr => mr.ServiceDate)
                 .ToListAsync();
 
