@@ -47,7 +47,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(mrc => mrc.Component)
             .WithMany(c => c.MaintenanceRecordComponents)
             .HasForeignKey(mrc => mrc.ComponentId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<FuelEntry>()
             .HasOne(le => le.Vehicle)
