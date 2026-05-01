@@ -54,7 +54,7 @@ namespace VehicleMaintenance.Services
                 return null;
             }
 
-            if (dto.Name is not null) user.Name = dto.Name;  // is there a better way to do this
+            if (dto.Name is not null) user.Name = dto.Name;  // is there a better way to map this
             if (dto.Age.HasValue) user.Age = dto.Age;
             if (!string.IsNullOrWhiteSpace(dto.Gender)) user.Gender = Enum.Parse<Gender>(dto.Gender, true);
             if (dto.DrivingExperience.HasValue) user.DrivingExperience = dto.DrivingExperience;

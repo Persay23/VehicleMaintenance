@@ -21,11 +21,11 @@ builder.Services.AddScoped<IMaintenanceRecordService, MaintenanceRecordService>(
 builder.Services.AddScoped<IMaintenanceRecordComponentService, MaintenanceRecordComponentService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.AddScoped<DataSeeder>();
+builder.Services.AddSingleton<IEmailSender<User>, NoOpEmailSender<User>>();
 
 
-builder.Services.AddIdentity<User, IdentityRole>(options => //NoOpEmailSender needs to be added
+builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
-    // Password rules
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
     options.Password.RequireUppercase = true;
