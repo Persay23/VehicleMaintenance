@@ -22,9 +22,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasForeignKey(v => v.UserId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        //modelBuilder.Entity<VehicleComponent>()
-        //    .HasKey(c => c.VehicleComponentId); // should be renamed to VehicleComponentId to follow convention
-
         modelBuilder.Entity<VehicleComponent>()
             .HasOne(c => c.Vehicle)
             .WithMany(v => v.VehicleComponents)
@@ -59,7 +56,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(p => p.Vehicle)
             .WithMany(v => v.Predictions)
             .HasForeignKey(p => p.VehicleId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Prediction>()
             .HasOne<VehicleComponent>()

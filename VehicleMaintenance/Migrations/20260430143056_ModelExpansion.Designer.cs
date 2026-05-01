@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VehicleMaintenance.Data;
 
@@ -11,9 +12,11 @@ using VehicleMaintenance.Data;
 namespace VehicleMaintenance.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260430143056_ModelExpansion")]
+    partial class ModelExpansion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -638,7 +641,7 @@ namespace VehicleMaintenance.Migrations
                     b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
                         .WithMany("MaintenanceRecords")
                         .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Vehicle");
@@ -674,7 +677,7 @@ namespace VehicleMaintenance.Migrations
                     b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
                         .WithMany("Predictions")
                         .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Vehicle");

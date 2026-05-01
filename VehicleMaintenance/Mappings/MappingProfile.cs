@@ -43,7 +43,11 @@ namespace VehicleMaintenance.Mappings
             CreateMap<MaintenanceRecord, MaintenanceRecordDto>();
 
             CreateMap<CreateMaintenanceRecordComponentDto, MaintenanceRecordComponent>();
-            CreateMap<MaintenanceRecordComponent, MaintenanceRecordComponentDto>();
+            CreateMap<MaintenanceRecordComponent, MaintenanceRecordComponentDto>()
+                .ForMember(dest => dest.VehicleComponentName,
+                    opt => opt.MapFrom(src => src.Component != null ? src.Component.VehicleComponentName : null))
+                .ForMember(dest => dest.ComponentType,
+                    opt => opt.MapFrom(src => src.Component != null ? src.Component.ComponentType.ToString() : null));
 
             CreateMap<CreatePredictionDto, Prediction>()
                 .ForMember(dest => dest.ComponentType,

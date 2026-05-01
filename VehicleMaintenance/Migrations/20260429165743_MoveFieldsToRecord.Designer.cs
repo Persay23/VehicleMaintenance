@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VehicleMaintenance.Data;
 
@@ -11,9 +12,11 @@ using VehicleMaintenance.Data;
 namespace VehicleMaintenance.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429165743_MoveFieldsToRecord")]
+    partial class MoveFieldsToRecord
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -214,12 +217,6 @@ namespace VehicleMaintenance.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("InvoiceImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("InvoiceNumber")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("LaborDays")
                         .HasColumnType("int");
 
@@ -233,7 +230,6 @@ namespace VehicleMaintenance.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ServiceName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ServiceType")
@@ -280,15 +276,6 @@ namespace VehicleMaintenance.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("CustomerComplaint")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ExpectedLifetimeKm")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ExpectedLifetimeYears")
-                        .HasColumnType("int");
 
                     b.Property<decimal?>("LaborCost")
                         .HasColumnType("decimal(18,2)");
@@ -534,16 +521,7 @@ namespace VehicleMaintenance.Migrations
                     b.Property<DateTime?>("LastServiceDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("NextServiceRecommendedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("NextServiceRecommendedKm")
-                        .HasColumnType("int");
-
                     b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PartNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("State")
@@ -556,12 +534,6 @@ namespace VehicleMaintenance.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("VehicleId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("WarrantyDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("WarrantyKm")
                         .HasColumnType("int");
 
                     b.HasKey("VehicleComponentId");
@@ -638,7 +610,7 @@ namespace VehicleMaintenance.Migrations
                     b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
                         .WithMany("MaintenanceRecords")
                         .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Vehicle");
@@ -674,7 +646,7 @@ namespace VehicleMaintenance.Migrations
                     b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
                         .WithMany("Predictions")
                         .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Vehicle");

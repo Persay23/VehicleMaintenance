@@ -13,10 +13,9 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
 
     public async Task SeedAsync()
     {
-        // Only seed if no users exist yet
         if (_userManager.Users.Any()) return;
 
-        // ── USER ─────────────────────────────────────────────────────────────
+        // ── USER ──────────────────────────────────────────────────────────────
         var user = new User
         {
             UserName = "jan@autocare.pl",
@@ -24,11 +23,11 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
             Name = "Jan Kowalski",
             Age = 28,
             Gender = Gender.Male,
-            DrivingExperience = 2018, // licence year
+            DrivingExperience = 2018,
         };
         await _userManager.CreateAsync(user, "Test1234!");
 
-        // ── VEHICLES ─────────────────────────────────────────────────────────
+        // ── VEHICLES ──────────────────────────────────────────────────────────
         var bmw = new Vehicle
         {
             UserId = user.Id,
@@ -37,7 +36,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
             YearOfProduction = 2019,
             VehicleType = VehicleType.Sedan,
             TransmissionType = TransmissionType.Automatic,
-            EngineType = EngineType.InternalCombustion,
+            EngineType = EngineType.Diesel,         // was InternalCombustion
             FuelType = FuelType.Diesel,
             Mileage = 187320,
         };
@@ -50,7 +49,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
             YearOfProduction = 2021,
             VehicleType = VehicleType.Sedan,
             TransmissionType = TransmissionType.Manual,
-            EngineType = EngineType.InternalCombustion,
+            EngineType = EngineType.Diesel,         // was InternalCombustion
             FuelType = FuelType.Diesel,
             Mileage = 64500,
         };
@@ -63,8 +62,8 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
             YearOfProduction = 2015,
             VehicleType = VehicleType.Hatchback,
             TransmissionType = TransmissionType.Automatic,
-            EngineType = EngineType.InternalCombustion,
-            FuelType = FuelType.Petrol,
+            EngineType = EngineType.Petrol,         // was InternalCombustion
+            FuelType = FuelType.Petrol95,           // was Petrol
             Mileage = 297856,
         };
 
@@ -75,7 +74,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var bmwBrakePads = new VehicleComponent
         {
             VehicleId = bmw.VehicleId,
-            ComponentType = ComponentType.BrakePads,
+            ComponentType = ComponentType.Brakes,
             VehicleComponentName = "Front Axle",
             VehicleComponentBrand = "Brembo",
             InstallationDate = new DateTime(2023, 1, 15),
@@ -89,10 +88,10 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var bmwTimingBelt = new VehicleComponent
         {
             VehicleId = bmw.VehicleId,
-            ComponentType = ComponentType.TimingBelt,
+            ComponentType = ComponentType.Engine,
             VehicleComponentBrand = "Gates",
             InstallationDate = new DateTime(2021, 3, 10),
-            State = State.Warning,
+            State = State.Repair,             // was Warning
             CurrentMileage = 120000,
             ExpectedLifetimeKm = 120000,
             ExpectedLifetimeYears = 6,
@@ -101,10 +100,10 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var bmwBattery = new VehicleComponent
         {
             VehicleId = bmw.VehicleId,
-            ComponentType = ComponentType.Battery,
+            ComponentType = ComponentType.Electrical,
             VehicleComponentBrand = "Varta",
             InstallationDate = new DateTime(2022, 9, 5),
-            State = State.Monitor,
+            State = State.Normal,                   // was Monitor
             CurrentMileage = 155000,
             ExpectedLifetimeKm = 80000,
             ExpectedLifetimeYears = 5,
@@ -113,7 +112,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var bmwAirFilter = new VehicleComponent
         {
             VehicleId = bmw.VehicleId,
-            ComponentType = ComponentType.AirFilter,
+            ComponentType = ComponentType.Cooling,
             VehicleComponentBrand = "Mahle",
             InstallationDate = new DateTime(2024, 6, 1),
             State = State.Good,
@@ -125,7 +124,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var bmwEngineOil = new VehicleComponent
         {
             VehicleId = bmw.VehicleId,
-            ComponentType = ComponentType.EngineOil,
+            ComponentType = ComponentType.Engine,
             VehicleComponentBrand = "Castrol",
             InstallationDate = new DateTime(2026, 4, 8),
             State = State.Good,
@@ -138,7 +137,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var audiBrakePads = new VehicleComponent
         {
             VehicleId = audi.VehicleId,
-            ComponentType = ComponentType.BrakePads,
+            ComponentType = ComponentType.Brakes,
             VehicleComponentName = "Front Axle",
             VehicleComponentBrand = "ATE",
             InstallationDate = new DateTime(2023, 6, 20),
@@ -151,7 +150,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var audiOil = new VehicleComponent
         {
             VehicleId = audi.VehicleId,
-            ComponentType = ComponentType.EngineOil,
+            ComponentType = ComponentType.Engine,
             VehicleComponentBrand = "Mobil 1",
             InstallationDate = new DateTime(2025, 11, 15),
             State = State.Good,
@@ -163,10 +162,10 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var audiTimingBelt = new VehicleComponent
         {
             VehicleId = audi.VehicleId,
-            ComponentType = ComponentType.TimingBelt,
+            ComponentType = ComponentType.Engine,
             VehicleComponentBrand = "Continental",
             InstallationDate = new DateTime(2021, 8, 1),
-            State = State.Monitor,
+            State = State.Normal,                   // was Monitor
             CurrentMileage = 10000,
             ExpectedLifetimeKm = 120000,
             ExpectedLifetimeYears = 6,
@@ -176,7 +175,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var hondaBrakePads = new VehicleComponent
         {
             VehicleId = honda.VehicleId,
-            ComponentType = ComponentType.BrakePads,
+            ComponentType = ComponentType.Brakes,
             VehicleComponentBrand = "Bosch",
             InstallationDate = new DateTime(2022, 4, 5),
             State = State.Critical,
@@ -189,10 +188,10 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         var hondaOil = new VehicleComponent
         {
             VehicleId = honda.VehicleId,
-            ComponentType = ComponentType.EngineOil,
+            ComponentType = ComponentType.Engine,
             VehicleComponentBrand = "Shell",
             InstallationDate = new DateTime(2025, 10, 3),
-            State = State.Monitor,
+            State = State.Normal,                   // was Monitor
             CurrentMileage = 285000,
             ExpectedLifetimeKm = 15000,
             ExpectedLifetimeYears = 1,
@@ -210,7 +209,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         {
             VehicleId = bmw.VehicleId,
             ServiceDate = new DateTime(2026, 4, 8),
-            ServiceType = ServiceType.OilChange,
+            ServiceType = ServiceType.Engine,
             ServiceName = "Full Oil Service",
             Cost = 320m,
             Description = "Castrol Edge 5W-30, 4.5L. Air filter replaced as well — was very dirty.",
@@ -219,15 +218,13 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                 new()
                 {
                     ComponentId = bmwEngineOil.VehicleComponentId,
-                    ComponentChangeType = ComponentChangeType.Changed,
+                    ComponentChangeType = ComponentChangeType.Replaced,
                     WorkDescription = "Castrol Edge 5W-30 · 4.5L",
                     OldState = State.Critical,
                     NewState = State.Good,
                     PartsCost = 120m,
                     LaborCost = 80m,
                     TotalCost = 200m,
-                    TechnicianName = "Marek W.",
-                    Vendor = "AutoService Kraków",
                     CreatedAt = DateTime.UtcNow,
                 },
                 new()
@@ -240,8 +237,6 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                     PartsCost = 55m,
                     LaborCost = 20m,
                     TotalCost = 75m,
-                    TechnicianName = "Marek W.",
-                    Vendor = "AutoService Kraków",
                     CreatedAt = DateTime.UtcNow,
                 }
             ]
@@ -251,7 +246,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         {
             VehicleId = bmw.VehicleId,
             ServiceDate = new DateTime(2026, 3, 29),
-            ServiceType = ServiceType.BrakeService,
+            ServiceType = ServiceType.Brakes,       // was BrakeService
             ServiceName = "Brake Service",
             Cost = 1240m,
             Description = "Front brake pads and rotors replaced.",
@@ -267,8 +262,6 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                     PartsCost = 840m,
                     LaborCost = 400m,
                     TotalCost = 1240m,
-                    TechnicianName = "Piotr K.",
-                    Vendor = "BMW Dealer Warszawa",
                     CreatedAt = DateTime.UtcNow,
                 }
             ]
@@ -288,7 +281,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         {
             VehicleId = bmw.VehicleId,
             ServiceDate = new DateTime(2025, 12, 3),
-            ServiceType = ServiceType.TyreSwap,
+            ServiceType = ServiceType.Tyres,        // was TyreSwap
             ServiceName = "Winter Tyre Swap",
             Cost = 220m,
             Description = "Swapped to winter tyres. Stored summer set.",
@@ -299,7 +292,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         {
             VehicleId = audi.VehicleId,
             ServiceDate = new DateTime(2026, 3, 29),
-            ServiceType = ServiceType.BrakeService,
+            ServiceType = ServiceType.Brakes,       // was BrakeService
             ServiceName = "Brake Pads Replaced",
             Cost = 640m,
             Description = "Front brake pads replaced. Rotors still good.",
@@ -310,12 +303,11 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                     ComponentId = audiBrakePads.VehicleComponentId,
                     ComponentChangeType = ComponentChangeType.Replaced,
                     WorkDescription = "ATE front pads",
-                    OldState = State.Warning,
+                    OldState = State.Repair,  // was Warning
                     NewState = State.Good,
                     PartsCost = 340m,
                     LaborCost = 300m,
                     TotalCost = 640m,
-                    Vendor = "AutoService Kraków",
                     CreatedAt = DateTime.UtcNow,
                 }
             ]
@@ -350,9 +342,9 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
             // Audi
             new FuelEntry { VehicleId = audi.VehicleId, FuelType = FuelType.Diesel, RefillDate = new DateTime(2026, 4, 10), Amount = 40m, Cost = 248m, Mileage = 64450, Notes = "Orlen" },
             new FuelEntry { VehicleId = audi.VehicleId, FuelType = FuelType.Diesel, RefillDate = new DateTime(2026, 3, 18), Amount = 38m, Cost = 235m, Mileage = 63900, Notes = "BP" },
-            // Honda
-            new FuelEntry { VehicleId = honda.VehicleId, FuelType = FuelType.Petrol, RefillDate = new DateTime(2026, 4, 12), Amount = 35m, Cost = 210m, Mileage = 297800, Notes = "Shell" },
-            new FuelEntry { VehicleId = honda.VehicleId, FuelType = FuelType.Petrol, RefillDate = new DateTime(2026, 3, 28), Amount = 33m, Cost = 198m, Mileage = 297400, Notes = "Orlen" }
+            // Honda                                                  // was Petrol
+            new FuelEntry { VehicleId = honda.VehicleId, FuelType = FuelType.Petrol95, RefillDate = new DateTime(2026, 4, 12), Amount = 35m, Cost = 210m, Mileage = 297800, Notes = "Shell" },
+            new FuelEntry { VehicleId = honda.VehicleId, FuelType = FuelType.Petrol95, RefillDate = new DateTime(2026, 3, 28), Amount = 33m, Cost = 198m, Mileage = 297400, Notes = "Orlen" }
         );
         await _context.SaveChangesAsync();
 
@@ -363,7 +355,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                 VehicleId = bmw.VehicleId,
                 VehicleComponentId = bmwBrakePads.VehicleComponentId,
                 Name = "Brake Pads",
-                ComponentType = ComponentType.BrakePads,
+                ComponentType = ComponentType.Brakes,
                 PredictedServiceDate = new DateTime(2026, 4, 20),
                 ConfidenceScore = 0.91f,
                 Status = PredictionStatus.Active,
@@ -374,7 +366,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                 VehicleId = bmw.VehicleId,
                 VehicleComponentId = bmwTimingBelt.VehicleComponentId,
                 Name = "Timing Belt",
-                ComponentType = ComponentType.TimingBelt,
+                ComponentType = ComponentType.Engine,
                 PredictedServiceDate = new DateTime(2026, 8, 1),
                 ConfidenceScore = 0.74f,
                 Status = PredictionStatus.Active,
@@ -385,7 +377,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                 VehicleId = bmw.VehicleId,
                 VehicleComponentId = bmwEngineOil.VehicleComponentId,
                 Name = "Oil Change",
-                ComponentType = ComponentType.EngineOil,
+                ComponentType = ComponentType.Engine,
                 PredictedServiceDate = new DateTime(2026, 4, 8),
                 ConfidenceScore = 0.99f,
                 Status = PredictionStatus.Completed,
@@ -397,7 +389,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                 VehicleId = bmw.VehicleId,
                 VehicleComponentId = bmwBattery.VehicleComponentId,
                 Name = "Battery Check",
-                ComponentType = ComponentType.Battery,
+                ComponentType = ComponentType.Electrical,
                 PredictedServiceDate = new DateTime(2026, 9, 15),
                 ConfidenceScore = 0.58f,
                 Status = PredictionStatus.Ignored,
@@ -408,7 +400,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                 VehicleId = honda.VehicleId,
                 VehicleComponentId = hondaBrakePads.VehicleComponentId,
                 Name = "Brake Pads",
-                ComponentType = ComponentType.BrakePads,
+                ComponentType = ComponentType.Brakes,
                 PredictedServiceDate = new DateTime(2026, 5, 1),
                 ConfidenceScore = 0.88f,
                 Status = PredictionStatus.Active,
