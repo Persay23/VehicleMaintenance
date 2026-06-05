@@ -36,7 +36,7 @@ namespace VehicleMaintenance.Tests.Mappings
                 ComponentType = ComponentType.Brakes,
                 InstallationDate = new DateTime(2023, 1, 1),
                 State = State.Good,
-                CurrentMileage = 50000,
+                InstalledAtVehicleMileage = 50000,
                 ExpectedLifetimeKm = 100000,
                 ExpectedLifetimeYears = 5,
                 Notes = "Test notes"
@@ -47,7 +47,7 @@ namespace VehicleMaintenance.Tests.Mappings
             dto.VehicleId.Should().Be(1);
             dto.ComponentType.Should().Be("Brakes");
             dto.State.Should().Be("Good");
-            dto.CurrentMileage.Should().Be(50000);
+            dto.InstalledAtVehicleMileage.Should().Be(50000);
             dto.Notes.Should().Be("Test notes");
         }
 
@@ -59,7 +59,7 @@ namespace VehicleMaintenance.Tests.Mappings
                 VehicleId = 2,
                 ComponentType = "Brakes",
                 InstallationDate = new DateTime(2023, 6, 1),
-                CurrentMileage = 30000,
+                InstalledAtVehicleMileage = 30000,
                 ExpectedLifetimeKm = 80000,
                 ExpectedLifetimeYears = 4
             };
@@ -68,7 +68,7 @@ namespace VehicleMaintenance.Tests.Mappings
 
             entity.VehicleId.Should().Be(2);
             entity.ComponentType.Should().Be(ComponentType.Brakes);
-            entity.CurrentMileage.Should().Be(30000);
+            entity.InstalledAtVehicleMileage.Should().Be(30000);
         }
     }
 }

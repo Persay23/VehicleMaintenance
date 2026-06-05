@@ -2,18 +2,27 @@
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services;
+using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Tests.Helpers;
+using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Data;
+using Xunit;
 
 namespace VehicleMaintenance.Tests.Services
 {
     public class VehicleComponentServiceTests
     {
         private readonly IMapper _mapper;
+        private readonly IAiPredictionService _aiPrediction = new Mock<IAiPredictionService>().Object;
+        private readonly ILogger<VehicleComponentService> _logger = NullLogger<VehicleComponentService>.Instance;
 
         public VehicleComponentServiceTests()
         {
@@ -27,7 +36,7 @@ namespace VehicleMaintenance.Tests.Services
         private VehicleComponentService CreateService(string dbName)
         {
             var context = DbContextFactory.Create(dbName);
-            return new VehicleComponentService(context, _mapper);
+            return new VehicleComponentService(context, _mapper, _aiPrediction, _logger);
         }
 
         [Fact]
@@ -40,7 +49,7 @@ namespace VehicleMaintenance.Tests.Services
                 VehicleId = 1,
                 ComponentType = "Brakes",
                 InstallationDate = DateTime.UtcNow,
-                CurrentMileage = 10000,
+                InstalledAtVehicleMileage = 10000,
                 ExpectedLifetimeKm = 60000,
                 ExpectedLifetimeYears = 3
             };
@@ -50,7 +59,7 @@ namespace VehicleMaintenance.Tests.Services
             result.Should().NotBeNull();
             result.VehicleId.Should().Be(1);
             result.ComponentType.Should().Be("Brakes");
-            result.CurrentMileage.Should().Be(10000);
+            result.InstalledAtVehicleMileage.Should().Be(10000);
         }
 
         [Fact]
@@ -66,7 +75,7 @@ namespace VehicleMaintenance.Tests.Services
             );
             await context.SaveChangesAsync();
 
-            var service = new VehicleComponentService(context, _mapper);
+            var service = new VehicleComponentService(context, _mapper, _aiPrediction, _logger);
             var result = await service.GetAllVehicleComponentsAsync();
 
             result.Should().HaveCount(2);
@@ -88,7 +97,7 @@ namespace VehicleMaintenance.Tests.Services
             context.VehicleComponents.Add(component);
             await context.SaveChangesAsync();
 
-            var service = new VehicleComponentService(context, _mapper);
+            var service = new VehicleComponentService(context, _mapper, _aiPrediction, _logger);
             var result = await service.GetVehicleComponentByIdAsync(component.VehicleComponentId);
 
             result.Should().NotBeNull();
@@ -121,7 +130,7 @@ namespace VehicleMaintenance.Tests.Services
             context.VehicleComponents.Add(component);
             await context.SaveChangesAsync();
 
-            var service = new VehicleComponentService(context, _mapper);
+            var service = new VehicleComponentService(context, _mapper, _aiPrediction, _logger);
             var deleted = await service.DeleteVehicleComponentByIdAsync(component.VehicleComponentId);
 
             deleted.Should().BeTrue();
@@ -152,24 +161,24 @@ namespace VehicleMaintenance.Tests.Services
                 ComponentType = ComponentType.Brakes,
                 InstallationDate = DateTime.UtcNow,
                 State = State.Good,
-                CurrentMileage = 10000
+                InstalledAtVehicleMileage = 10000
             };
             context.VehicleComponents.Add(component);
             await context.SaveChangesAsync();
 
-            var service = new VehicleComponentService(context, _mapper);
+            var service = new VehicleComponentService(context, _mapper, _aiPrediction, _logger);
 
             var updateDto = new UpdateVehicleComponentDto
             {
-                CurrentMileage = 25000,
-                State = "NeedsService",
+                InstalledAtVehicleMileage = 25000,
+                //State = "NeedsService",
                 Notes = "Updated during test"
             };
 
             var result = await service.UpdateVehicleComponentByIdAsync(component.VehicleComponentId, updateDto);
 
             result.Should().NotBeNull();
-            result!.CurrentMileage.Should().Be(25000);
+            result!.InstalledAtVehicleMileage.Should().Be(25000);
             result.Notes.Should().Be("Updated during test");
         }
 
