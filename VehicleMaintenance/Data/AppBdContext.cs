@@ -11,6 +11,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<MaintenanceRecordComponent> MaintenanceRecordComponents { get; set; }
     public DbSet<FuelEntry> FuelEntries { get; set; }
     public DbSet<Prediction> Predictions { get; set; }
+    public DbSet<GeneralExpense> GeneralExpenses { get; set; }
+    public DbSet<UserDrivingProfile> UserDrivingProfiles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,9 +61,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Prediction>()
-            .HasOne<VehicleComponent>()
+            .HasOne(p => p.VehicleComponent)
             .WithMany(c => c.Predictions)
             .HasForeignKey(p => p.VehicleComponentId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<GeneralExpense>()
+            .HasOne(e => e.Vehicle)
+            .WithMany(v => v.GeneralExpenses)
+            .HasForeignKey(e => e.VehicleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserDrivingProfile>()
+            .HasOne(p => p.User)
+            .WithOne(u => u.DrivingProfile)
+            .HasForeignKey<UserDrivingProfile>(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

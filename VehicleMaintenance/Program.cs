@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Models.Entities;
+using VehicleMaintenance.Repositories;
+using VehicleMaintenance.Repositories.Interfaces;
 using VehicleMaintenance.Services;
+using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,8 +23,17 @@ builder.Services.AddScoped<IFuelEntryService, FuelEntryService>();
 builder.Services.AddScoped<IMaintenanceRecordService, MaintenanceRecordService>();
 builder.Services.AddScoped<IMaintenanceRecordComponentService, MaintenanceRecordComponentService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
+builder.Services.AddScoped<IGeneralExpenseRepository, GeneralExpenseRepository>();
+builder.Services.AddScoped<IGeneralExpenseService, GeneralExpenseService>();
+builder.Services.AddScoped<IUserDrivingProfileRepository, UserDrivingProfileRepository>();
+builder.Services.AddScoped<IUserDrivingProfileService, UserDrivingProfileService>();
 builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddSingleton<IEmailSender<User>, NoOpEmailSender<User>>();
+builder.Services.AddHttpClient<IGeminiService, GeminiService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(120);
+});
+builder.Services.AddScoped<IAiPredictionService, AiPredictionService>();
 
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -71,12 +83,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
 app.UseCors("DevPolicy");
-app.MapRazorPages();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseHttpsRedirection();
-app.UseAuthorization();
+app.MapRazorPages();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())

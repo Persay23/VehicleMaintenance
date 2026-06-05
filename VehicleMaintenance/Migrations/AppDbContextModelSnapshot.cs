@@ -197,6 +197,51 @@ namespace VehicleMaintenance.Migrations
                     b.ToTable("FuelEntries");
                 });
 
+            modelBuilder.Entity("VehicleMaintenance.Models.Entities.GeneralExpense", b =>
+                {
+                    b.Property<int>("GeneralExpenseId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GeneralExpenseId"));
+
+                    b.Property<decimal>("Cost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ExpenseCategory")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRecurring")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RecurrenceEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RecurrenceEvery")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RecurrenceInterval")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("GeneralExpenseId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("GeneralExpenses");
+                });
+
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.MaintenanceRecord", b =>
                 {
                     b.Property<int>("MaintenanceRecordId")
@@ -343,26 +388,37 @@ namespace VehicleMaintenance.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("ComponentType")
-                        .HasColumnType("int");
-
-                    b.Property<double>("ConfidenceScore")
-                        .HasColumnType("float");
+                    b.Property<decimal?>("ConfidenceScore")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("PredictedServiceDate")
+                    b.Property<int?>("EstimatedRemainingKm")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("IgnoredAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int>("VehicleComponentId")
+                    b.Property<DateTime?>("SuggestedByDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Urgency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("VehicleComponentId")
                         .HasColumnType("int");
 
                     b.Property<int>("VehicleId")
@@ -458,6 +514,50 @@ namespace VehicleMaintenance.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("VehicleMaintenance.Models.Entities.UserDrivingProfile", b =>
+                {
+                    b.Property<int>("UserDrivingProfileId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserDrivingProfileId"));
+
+                    b.Property<int>("AnnualKm")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ClimateZone")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DrivingStyle")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ParkingType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PrimaryUsage")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsagePattern")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("UserDrivingProfileId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserDrivingProfiles");
+                });
+
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.Vehicle", b =>
                 {
                     b.Property<int>("VehicleId")
@@ -465,6 +565,9 @@ namespace VehicleMaintenance.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VehicleId"));
+
+                    b.Property<int?>("AverageKmPerYear")
+                        .HasColumnType("int");
 
                     b.Property<string>("Brand")
                         .IsRequired()
@@ -483,9 +586,6 @@ namespace VehicleMaintenance.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("PredictionId")
-                        .HasColumnType("int");
-
                     b.Property<int>("TransmissionType")
                         .HasColumnType("int");
 
@@ -501,8 +601,6 @@ namespace VehicleMaintenance.Migrations
 
                     b.HasKey("VehicleId");
 
-                    b.HasIndex("PredictionId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("Vehicles");
@@ -516,10 +614,28 @@ namespace VehicleMaintenance.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VehicleComponentId"));
 
-                    b.Property<int>("ComponentType")
+                    b.Property<double?>("AiConfidenceScore")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("AiEstimatedNextServiceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("AiEstimatedRemainingKm")
                         .HasColumnType("int");
 
-                    b.Property<int>("CurrentMileage")
+                    b.Property<DateTime?>("AiGeneratedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("AiHealthPercent")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AiReasoning")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AiRecommendation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ComponentType")
                         .HasColumnType("int");
 
                     b.Property<int>("ExpectedLifetimeKm")
@@ -530,6 +646,9 @@ namespace VehicleMaintenance.Migrations
 
                     b.Property<DateTime>("InstallationDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("InstalledAtVehicleMileage")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("LastServiceDate")
                         .HasColumnType("datetime2");
@@ -633,6 +752,17 @@ namespace VehicleMaintenance.Migrations
                     b.Navigation("Vehicle");
                 });
 
+            modelBuilder.Entity("VehicleMaintenance.Models.Entities.GeneralExpense", b =>
+                {
+                    b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
+                        .WithMany("GeneralExpenses")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.MaintenanceRecord", b =>
                 {
                     b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
@@ -665,11 +795,10 @@ namespace VehicleMaintenance.Migrations
 
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.Prediction", b =>
                 {
-                    b.HasOne("VehicleMaintenance.Models.Entities.VehicleComponent", null)
+                    b.HasOne("VehicleMaintenance.Models.Entities.VehicleComponent", "VehicleComponent")
                         .WithMany("Predictions")
                         .HasForeignKey("VehicleComponentId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("VehicleMaintenance.Models.Entities.Vehicle", "Vehicle")
                         .WithMany("Predictions")
@@ -678,14 +807,23 @@ namespace VehicleMaintenance.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+
+                    b.Navigation("VehicleComponent");
+                });
+
+            modelBuilder.Entity("VehicleMaintenance.Models.Entities.UserDrivingProfile", b =>
+                {
+                    b.HasOne("VehicleMaintenance.Models.Entities.User", "User")
+                        .WithOne("DrivingProfile")
+                        .HasForeignKey("VehicleMaintenance.Models.Entities.UserDrivingProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.Vehicle", b =>
                 {
-                    b.HasOne("VehicleMaintenance.Models.Entities.Prediction", null)
-                        .WithMany("Vehicles")
-                        .HasForeignKey("PredictionId");
-
                     b.HasOne("VehicleMaintenance.Models.Entities.User", "User")
                         .WithMany("Vehicles")
                         .HasForeignKey("UserId")
@@ -711,19 +849,18 @@ namespace VehicleMaintenance.Migrations
                     b.Navigation("MaintenanceRecordComponents");
                 });
 
-            modelBuilder.Entity("VehicleMaintenance.Models.Entities.Prediction", b =>
-                {
-                    b.Navigation("Vehicles");
-                });
-
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.User", b =>
                 {
+                    b.Navigation("DrivingProfile");
+
                     b.Navigation("Vehicles");
                 });
 
             modelBuilder.Entity("VehicleMaintenance.Models.Entities.Vehicle", b =>
                 {
                     b.Navigation("FuelEntries");
+
+                    b.Navigation("GeneralExpenses");
 
                     b.Navigation("MaintenanceRecords");
 
