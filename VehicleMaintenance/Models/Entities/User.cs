@@ -11,5 +11,6 @@ namespace VehicleMaintenance.Models.Entities
         public int? DrivingExperience { get; set; }
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
         public List<Vehicle> Vehicles { get; set; } = [];
+        public UserDrivingProfile? DrivingProfile { get; set; }
     }
 }
