@@ -36,13 +36,6 @@ namespace VehicleMaintenance.Controllers
             return Ok(predictions);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<PredictionDto>> CreatePrediction(CreatePredictionDto createPredictionDto)
-        {
-            var created = await _iPredictionService.CreatePredictionAsync(createPredictionDto);
-            return CreatedAtAction(nameof(GetPredictionById), new { id = created.PredictionId }, created);
-        }
-
         [HttpPatch("{id:int}")]
         public async Task<ActionResult<PredictionDto>> UpdatePrediction(int id, UpdatePredictionDto dto)
         {
