@@ -11,7 +11,7 @@ namespace VehicleMaintenance.Models.Entities
         public int YearOfProduction { get; set; }
         public VehicleType VehicleType { get; set; }
         public TransmissionType TransmissionType { get; set; }
-        public EngineType EngineType { get; set; }
+        public EngineType EngineType { get; set; } // Electric car → EngineType = Electric, FuelType = Electric → redundant
         public FuelType FuelType { get; set; }
         public int Mileage { get; set; }
         public int? AverageKmPerYear { get; set; }   // derived from maintenance records; null until enough data
@@ -20,5 +20,6 @@ namespace VehicleMaintenance.Models.Entities
         public List<FuelEntry> FuelEntries { get; set; } = [];
         public List<MaintenanceRecord> MaintenanceRecords { get; set; } = [];
         public List<Prediction> Predictions { get; set; } = [];
+        public List<GeneralExpense> GeneralExpenses { get; set; } = [];
     }
 }

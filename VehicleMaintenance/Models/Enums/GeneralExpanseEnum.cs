@@ -11,4 +11,12 @@
         Accessories,
         Other
     }
+
+    public enum RecurrenceInterval
+    {
+        Days,
+        Weeks,
+        Months,
+        Years
+    }
 }
