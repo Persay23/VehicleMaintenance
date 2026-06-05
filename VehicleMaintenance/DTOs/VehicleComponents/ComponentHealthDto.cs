@@ -13,5 +13,7 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
         public double KmLifetimePercent { get; set; }
         public double YearsLifetimePercent { get; set; }
         public string Status { get; set; } = null!; // "Good", "Monitor", "Warning", "Critical"
+        public DateTime? AiEstimatedNextServiceDate { get; set; }
+        public DateTime? AiGeneratedAt { get; set; }
     }
 }

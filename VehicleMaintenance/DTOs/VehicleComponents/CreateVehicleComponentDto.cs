@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using VehicleMaintenance.Models.Enums;
 
 namespace VehicleMaintenance.DTOs.VehicleComponents
@@ -18,7 +18,7 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
         public string? Notes { get; set; }
 
         [Range(0, int.MaxValue)]
-        public int CurrentMileage { get; set; }
+        public int InstalledAtVehicleMileage { get; set; }
 
         [Range(0, int.MaxValue)]
         public int ExpectedLifetimeKm { get; set; }

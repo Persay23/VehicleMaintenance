@@ -34,7 +34,7 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("vehicle/{vehicleId}")]
         public async Task<ActionResult<List<VehicleComponentDto>>> GetByVehicle(int vehicleId)
         {
-            var components = await _iVehicleComponentService.GetByVehicleAsync(vehicleId);
+            var components = await _iVehicleComponentService.GetVehicleComponentByVehicleAsync(vehicleId);
             return Ok(components);
         }
 
@@ -44,20 +44,6 @@ namespace VehicleMaintenance.Controllers
             var history = await _iVehicleComponentService.GetComponentHistoryAsync(id);
             return Ok(history);
         }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="createVehicleComponentDto"></param>
-        /// <returns></returns>
-        [HttpPost]
-        public async Task<ActionResult> CreateVehicleComponent(CreateVehicleComponentDto createVehicleComponentDto)
-        {
-            var createdVehicleComponent = await _iVehicleComponentService.CreateVehicleComponentAsync(createVehicleComponentDto);
-            return Ok(createdVehicleComponent);
-        }
-        
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<VehicleComponentDto>> GetVehicleComponentById(int id)
@@ -69,6 +55,18 @@ namespace VehicleMaintenance.Controllers
             }
 
             return Ok(component);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="createVehicleComponentDto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<ActionResult> CreateVehicleComponent(CreateVehicleComponentDto createVehicleComponentDto)
+        {
+            var createdVehicleComponent = await _iVehicleComponentService.CreateVehicleComponentAsync(createVehicleComponentDto);
+            return Ok(createdVehicleComponent);
         }
 
         [HttpPatch("{id:int}")]

@@ -10,11 +10,10 @@ namespace VehicleMaintenance.DTOs.VehicleComponents
         public string? VehicleComponentBrand { get; set; }
         public DateTime? InstallationDate { get; set; }
         public DateTime? LastServiceDate { get; set; }
-        public string? State { get; set; }
         public string? Notes { get; set; }
 
         [Range(0, int.MaxValue)]
-        public int? CurrentMileage { get; set; }
+        public int? InstalledAtVehicleMileage { get; set; }
 
         [Range(0, int.MaxValue)]
         public int? ExpectedLifetimeKm { get; set; }

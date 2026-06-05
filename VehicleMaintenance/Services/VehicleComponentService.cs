@@ -1,22 +1,81 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.SqlServer.Server;
 using System.ComponentModel;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.VehicleComponents;
+using VehicleMaintenance.Models;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services
 {
-    public class VehicleComponentService(AppDbContext context, IMapper mapper) : IVehicleComponentService
+    public class VehicleComponentService(
+        AppDbContext context,
+        IMapper mapper,
+        IAiPredictionService aiPrediction,
+        ILogger<VehicleComponentService> logger) : IVehicleComponentService
     {
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
+        private readonly IAiPredictionService _aiPrediction = aiPrediction;
+        private readonly ILogger<VehicleComponentService> _logger = logger;
+        public async Task<List<VehicleComponentDto>> GetVehicleComponentByVehicleAsync(int vehicleId)
+        {
+            var components = await _context.VehicleComponents
+                .Where(vc => vc.VehicleId == vehicleId)
+                .Include(vc => vc.Vehicle)
+                .ToListAsync();
+            return _mapper.Map<List<VehicleComponentDto>>(components);
+        }
+
+        public async Task<List<VehicleComponentDto>> GetAllVehicleComponentsAsync()
+        {
+            var vehicleComponents = await _context.VehicleComponents
+                .Include(vc => vc.Vehicle)
+                .ToListAsync();
+            return _mapper.Map<List<VehicleComponentDto>>(vehicleComponents);
+        }
+
+        public async Task<VehicleComponentDto?> GetVehicleComponentByIdAsync(int id)
+        {
+            var vehicleComponent = await _context.VehicleComponents
+                .Include(vc => vc.Vehicle)
+                .FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
+            return vehicleComponent is null ? null : _mapper.Map<VehicleComponentDto>(vehicleComponent);
+        }
+        public async Task<List<ComponentHistoryDto>> GetComponentHistoryAsync(int componentId)
+        {
+            var items = await _context.MaintenanceRecordComponents
+                .Where(mrc => mrc.ComponentId == componentId)
+                .Include(mrc => mrc.MaintenanceRecord)
+                .OrderByDescending(mrc => mrc.MaintenanceRecord.ServiceDate)
+                .ToListAsync();
+
+            return _mapper.Map<List<ComponentHistoryDto>>(items);
+        }
+        public async Task<List<ComponentHealthDto>> GetComponentHealthAsync(int vehicleId)
+        {
+            var components = await _context.VehicleComponents
+                .Where(c => c.VehicleId == vehicleId)
+                .Include(c => c.Vehicle)
+                .ToListAsync();
+
+            return [.. components.Select(c => CalculateHealth(c, c.Vehicle.Mileage))];
+        }
 
         public async Task<VehicleComponentDto> CreateVehicleComponentAsync(CreateVehicleComponentDto dto)
         {
             var vehilcecomponent = _mapper.Map<VehicleComponent>(dto);
+
+            var vehicle = await _context.Vehicles.FindAsync(dto.VehicleId);
+            if (vehicle != null)
+            {
+                var health = CalculateHealth(vehilcecomponent, vehicle.Mileage);
+                vehilcecomponent.State = Enum.Parse<State>(health.Status, true);
+            }
 
             _context.VehicleComponents.Add(vehilcecomponent);
             await _context.SaveChangesAsync();
@@ -24,29 +83,11 @@ namespace VehicleMaintenance.Services
             return _mapper.Map<VehicleComponentDto>(vehilcecomponent);
         }
 
-        public async Task<List<VehicleComponentDto>> GetByVehicleAsync(int vehicleId)
-        {
-            var components = await _context.VehicleComponents
-                .Where(vc => vc.VehicleId == vehicleId)
-                .ToListAsync();
-            return _mapper.Map<List<VehicleComponentDto>>(components);
-        }
-
-        public async Task<List<VehicleComponentDto>> GetAllVehicleComponentsAsync()
-        {
-            var vehicleComponents = await _context.VehicleComponents.ToListAsync();
-            return _mapper.Map<List<VehicleComponentDto>>(vehicleComponents);
-        }
-
-        public async Task<VehicleComponentDto?> GetVehicleComponentByIdAsync(int id)
-        {
-            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
-            return vehicleComponent is null ? null : _mapper.Map<VehicleComponentDto>(vehicleComponent);
-        }
-
         public async Task<VehicleComponentDto?> UpdateVehicleComponentByIdAsync(int id, UpdateVehicleComponentDto dto)
         {
-            var vehicleComponent = await _context.VehicleComponents.FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
+            var vehicleComponent = await _context.VehicleComponents
+                .Include(vc => vc.Vehicle)
+                .FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
             if (vehicleComponent is null)
             {
                 return null;
@@ -57,9 +98,8 @@ namespace VehicleMaintenance.Services
             if (!string.IsNullOrWhiteSpace(dto.ComponentType)) vehicleComponent.ComponentType = Enum.Parse<ComponentType>(dto.ComponentType, true);
             if (dto.InstallationDate.HasValue) vehicleComponent.InstallationDate = dto.InstallationDate.Value;
             if (dto.LastServiceDate.HasValue) vehicleComponent.LastServiceDate = dto.LastServiceDate.Value;
-            if (!string.IsNullOrWhiteSpace(dto.State)) vehicleComponent.State = Enum.Parse<State>(dto.State, true);
             if (dto.Notes is not null) vehicleComponent.Notes = dto.Notes;
-            if (dto.CurrentMileage.HasValue) vehicleComponent.CurrentMileage = dto.CurrentMileage.Value;
+            if (dto.InstalledAtVehicleMileage.HasValue) vehicleComponent.InstalledAtVehicleMileage = dto.InstalledAtVehicleMileage.Value;
             if (dto.ExpectedLifetimeKm.HasValue) vehicleComponent.ExpectedLifetimeKm = dto.ExpectedLifetimeKm.Value;
             if (dto.ExpectedLifetimeYears.HasValue) vehicleComponent.ExpectedLifetimeYears = dto.ExpectedLifetimeYears.Value;
             if (dto.PartNumber is not null) vehicleComponent.PartNumber = dto.PartNumber;
@@ -68,7 +108,17 @@ namespace VehicleMaintenance.Services
             if (dto.NextServiceRecommendedKm.HasValue) vehicleComponent.NextServiceRecommendedKm = dto.NextServiceRecommendedKm.Value;
             if (dto.NextServiceRecommendedDate.HasValue) vehicleComponent.NextServiceRecommendedDate = dto.NextServiceRecommendedDate.Value;
 
+            // Always derive state from computed health so DB, AI prompt, and UI stay in sync
+            if (vehicleComponent.Vehicle != null)
+            {
+                var health = CalculateHealth(vehicleComponent, vehicleComponent.Vehicle.Mileage);
+                vehicleComponent.State = Enum.Parse<State>(health.Status, true);
+            }
+
             await _context.SaveChangesAsync();
+
+            _aiPrediction.TriggerBackgroundUpdate(vehicleComponent.VehicleComponentId, vehicleComponent.VehicleId);
+
             return _mapper.Map<VehicleComponentDto>(vehicleComponent);
         }
 
@@ -101,88 +151,65 @@ namespace VehicleMaintenance.Services
             return true;
         }
 
-        public async Task<List<ComponentHealthDto>> GetComponentHealthAsync(int vehicleId) // dive into this
+        private static ComponentHealthDto CalculateHealth(VehicleComponent c, int vehicleCurrentMileage)
         {
-            var components = await _context.VehicleComponents
-                .Where(c => c.VehicleId == vehicleId)
-                .ToListAsync();
-
             var now = DateTime.UtcNow;
 
-            return [.. components.Select(c =>
+            // Unknown: install mileage reference not set (vehicle already has mileage → km calc unreliable)
+            // Unknown: no lifetime limits configured at all
+            bool kmRefMissing = c.InstalledAtVehicleMileage == 0 && vehicleCurrentMileage > 0;
+            bool noLimits     = c.ExpectedLifetimeKm == 0 && c.ExpectedLifetimeYears == 0;
+
+            if (kmRefMissing || noLimits)
             {
-                // KM-based health
-                var remainingKm = c.ExpectedLifetimeKm - c.CurrentMileage;
-                var kmPercent = c.ExpectedLifetimeKm > 0
-                    ? Math.Max(0, (double)remainingKm / c.ExpectedLifetimeKm * 100)
-                    : 100;
-
-                // Year-based health — uses InstallationDate from your entity
-                var yearsUsed = (now - c.InstallationDate).TotalDays / 365.25;
-                var yearsPercent = c.ExpectedLifetimeYears > 0
-                    ? Math.Max(0, (1 - yearsUsed / c.ExpectedLifetimeYears) * 100)
-                    : 100;
-
-                // Worst of the two determines overall status
-                var worstPercent = Math.Min(kmPercent, yearsPercent);
-
-                var status = worstPercent switch
-                {
-                    <= 15 => "Critical",
-                    <= 30 => "Warning",
-                    <= 50 => "Monitor",
-                    <= 75 => "Good",
-                    _ => "Excelent"
-                };
-
                 return new ComponentHealthDto
                 {
-                    ComponentId = c.VehicleComponentId,
+                    ComponentId          = c.VehicleComponentId,
                     VehicleComponentName = c.VehicleComponentName,
                     VehicleComponentBrand = c.VehicleComponentBrand,
-                    ComponentType = c.ComponentType.ToString(),
-                    CurrentState = c.State.ToString(),
-                    InstallationDate = c.InstallationDate,
-                    RemainingKm = Math.Max(0, remainingKm),
-                    KmLifetimePercent = Math.Round(kmPercent, 1),
-                    YearsLifetimePercent = Math.Round(yearsPercent, 1),
-                    Status = status,
+                    ComponentType        = c.ComponentType.ToString(),
+                    CurrentState         = "Unknown",
+                    Status               = "Unknown",
+                    InstallationDate     = c.InstallationDate,
+                    RemainingKm          = 0,
+                    KmLifetimePercent    = 0,
+                    YearsLifetimePercent = 0,
+                    AiEstimatedNextServiceDate = c.AiEstimatedNextServiceDate,
+                    AiGeneratedAt        = c.AiGeneratedAt,
                 };
-            })];
-        }
+            }
 
-        public async Task<List<ComponentHistoryDto>> GetComponentHistoryAsync(int componentId)
-        {
-            var items = await _context.MaintenanceRecordComponents
-                .Where(mrc => mrc.ComponentId == componentId)
-                .Include(mrc => mrc.MaintenanceRecord)
-                .OrderByDescending(mrc => mrc.MaintenanceRecord.ServiceDate)
-                .ToListAsync();
+            // InstalledAtVehicleMileage = vehicle odometer at install; subtract to get km used on this component
+            var kmUsed      = Math.Max(0, vehicleCurrentMileage - c.InstalledAtVehicleMileage);
+            var remainingKm = c.ExpectedLifetimeKm - kmUsed;
+            var kmPercent   = c.ExpectedLifetimeKm > 0
+                ? Math.Max(0, (double)remainingKm / c.ExpectedLifetimeKm * 100)
+                : 100;
 
-            return [.. items.Select(mrc => new ComponentHistoryDto
+            var yearsUsed = (now - c.InstallationDate).TotalDays / 365.25;
+            var yearsPercent = c.ExpectedLifetimeYears > 0
+                ? Math.Max(0, (1 - yearsUsed / c.ExpectedLifetimeYears) * 100)
+                : 100;
+
+            var daysUsed = (int)(now - c.InstallationDate).TotalDays;
+            var computedState = ComponentStateCalculator.DeriveState(
+                c.ExpectedLifetimeKm, kmUsed, c.ExpectedLifetimeYears, daysUsed);
+
+            return new ComponentHealthDto
             {
-                MaintenanceRecordComponentId = mrc.MaintenanceRecordComponentId,
-                MaintenanceRecordId = mrc.MaintenanceRecordId,
-                ServiceDate = mrc.MaintenanceRecord.ServiceDate,
-                ServiceName = mrc.MaintenanceRecord.ServiceName,
-                ServiceType = mrc.MaintenanceRecord.ServiceType.ToString(),
-                Mileage = mrc.MaintenanceRecord.Mileage,
-                TechnicianName = mrc.MaintenanceRecord.TechnicianName,
-                Notes = mrc.MaintenanceRecord.Notes,
-                ComponentChangeType = mrc.ComponentChangeType.ToString(),
-                CustomerComplaint = mrc.CustomerComplaint,
-                WorkDescription = mrc.WorkDescription,
-                ChangedParts = mrc.ChangedParts,
-                OldState = mrc.OldState.ToString(),
-                NewState = mrc.NewState.ToString(),
-                ExpectedLifetimeKm = mrc.ExpectedLifetimeKm,
-                ExpectedLifetimeYears = mrc.ExpectedLifetimeYears,
-                LaborCost = mrc.LaborCost,
-                PartsCost = mrc.PartsCost,
-                OtherCost = mrc.OtherCost,
-                TotalCost = mrc.TotalCost,
-                CreatedAt = mrc.CreatedAt,
-            })];
+                ComponentId          = c.VehicleComponentId,
+                VehicleComponentName = c.VehicleComponentName,
+                VehicleComponentBrand = c.VehicleComponentBrand,
+                ComponentType        = c.ComponentType.ToString(),
+                CurrentState         = computedState,
+                InstallationDate     = c.InstallationDate,
+                RemainingKm          = Math.Max(0, remainingKm),
+                KmLifetimePercent    = Math.Round(kmPercent, 1),
+                YearsLifetimePercent = Math.Round(yearsPercent, 1),
+                Status               = computedState,
+                AiEstimatedNextServiceDate = c.AiEstimatedNextServiceDate,
+                AiGeneratedAt        = c.AiGeneratedAt,
+            };
         }
     }
 }
