@@ -14,6 +14,7 @@ namespace VehicleMaintenance.Models.Entities
         public EngineType EngineType { get; set; }
         public FuelType FuelType { get; set; }
         public int Mileage { get; set; }
+        public int? AverageKmPerYear { get; set; }   // derived from maintenance records; null until enough data
         public User User { get; set; } = null!;
         public List<VehicleComponent> VehicleComponents { get; set; } = [];
         public List<FuelEntry> FuelEntries { get; set; } = [];

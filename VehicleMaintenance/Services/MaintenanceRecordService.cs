@@ -19,18 +19,41 @@ namespace VehicleMaintenance.Services
 
             _context.MaintenanceRecords.Add(maintenancerecord);
 
+            Vehicle? vehicle = null;
             if (dto.Mileage.HasValue)
             {
-                var vehicle = await _context.Vehicles.FindAsync(dto.VehicleId);
+                vehicle = await _context.Vehicles.FindAsync(dto.VehicleId);
                 if (vehicle != null && dto.Mileage.Value > vehicle.Mileage)
                     vehicle.Mileage = dto.Mileage.Value;
             }
 
             await _context.SaveChangesAsync();
 
+            // Recompute average km/year from full record history now that the new record is saved
+            vehicle ??= await _context.Vehicles.FindAsync(dto.VehicleId);
+            if (vehicle != null)
+            {
+                var oldest = await _context.MaintenanceRecords
+                    .Where(r => r.VehicleId == dto.VehicleId && r.Mileage.HasValue)
+                    .OrderBy(r => r.ServiceDate)
+                    .FirstOrDefaultAsync();
+
+                if (oldest?.Mileage is not null)
+                {
+                    var daysDiff = (DateTime.UtcNow.Date - oldest.ServiceDate.Date).Days;
+                    var kmDiff   = vehicle.Mileage - oldest.Mileage.Value;
+                    if (daysDiff >= 30 && kmDiff > 0)
+                    {
+                        vehicle.AverageKmPerYear = (int)Math.Round(kmDiff / (daysDiff / 365.25));
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+
             if (dto.PredictionId.HasValue)
             {
                 var prediction = await _context.Predictions.FindAsync(dto.PredictionId.Value);
+
                 if (prediction != null)
                 {
                     prediction.Status = PredictionStatus.Completed;
@@ -38,6 +61,10 @@ namespace VehicleMaintenance.Services
                     await _context.SaveChangesAsync();
                 }
             }
+
+            // NOTE: vehicle suggestions are triggered per-component in MaintenanceRecordComponentService,
+            // not here — this service creates the record header before any components exist,
+            // so firing AI here would run on incomplete data and then be re-run again per component.
 
             return _mapper.Map<MaintenanceRecordDto>(maintenancerecord);
         }

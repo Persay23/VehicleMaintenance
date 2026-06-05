@@ -14,5 +14,6 @@ namespace VehicleMaintenance.DTOs.Vehicles
         public string EngineType { get; set; } = null!; // e.g., "hybrid", "combustion", "Electric"
         public string FuelType { get; set; } = null!; // e.g., "Gasoline", "Diesel", "Electric"
         public int Mileage { get; set; }
+        public int? AverageKmPerYear { get; set; }
     }
 }
