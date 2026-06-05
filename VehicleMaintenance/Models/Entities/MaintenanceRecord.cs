@@ -7,11 +7,11 @@ namespace VehicleMaintenance.Models.Entities
         public int MaintenanceRecordId { get; private set; }
         public int VehicleId { get; set; }
         public string ServiceName { get; set; } = null!;
-        public DateTime ServiceDate { get; set; }
+        public DateTime ServiceDate { get; set; } // redundant, should be calculated based on started at and completed at,
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public int? LaborDays { get; set; }
-        public ServiceType ServiceType { get; set; }
+        public ServiceType ServiceType { get; set; } // needs to be expanded to include more specific types of services (oil change, tire rotation, brake service, etc.)
         public int? Mileage { get; set; }
         public decimal Cost { get; set; }
         public string? Description { get; set; }

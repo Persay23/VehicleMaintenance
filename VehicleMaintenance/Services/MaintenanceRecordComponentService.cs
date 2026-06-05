@@ -4,16 +4,39 @@ using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.MaintenanceRecordComponents;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services
 {
-    public class MaintenanceRecordComponentService(AppDbContext context, IMapper mapper) : IMaintenanceRecordComponentService
+    public class MaintenanceRecordComponentService(
+        AppDbContext context,
+        IMapper mapper,
+        IAiPredictionService aiPrediction,
+        ILogger<MaintenanceRecordComponentService> logger) : IMaintenanceRecordComponentService
     {
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
+        private readonly IAiPredictionService _aiPrediction = aiPrediction;
+        private readonly ILogger<MaintenanceRecordComponentService> _logger = logger;
 
-        public async Task<MaintenanceRecordComponentDto> CreateMaintenanceRecordComponentAsync(CreateMaintenanceRecordComponentDto dto)
+        public async Task<List<MaintenanceRecordComponentDto>> GetAllMaintenanceRecordComponentsAsync()
+        {
+            var maintenanceRecordComponents = await _context.MaintenanceRecordComponents
+                .Include(mrc => mrc.Component)
+                .ToListAsync();
+            return _mapper.Map<List<MaintenanceRecordComponentDto>>(maintenanceRecordComponents);
+        }
+
+        public async Task<MaintenanceRecordComponentDto?> GetMaintenanceRecordComponentByIdAsync(int id)
+        {
+            var maintenanceRecordComponent = await _context.MaintenanceRecordComponents
+                .Include(mrc => mrc.Component)
+                .FirstOrDefaultAsync(mrc => mrc.MaintenanceRecordComponentId == id);
+            return maintenanceRecordComponent is null ? null : _mapper.Map<MaintenanceRecordComponentDto>(maintenanceRecordComponent);
+        }
+
+        public async Task<MaintenanceRecordComponentDto> CreateMaintenanceRecordComponentAsync(CreateMaintenanceRecordComponentDto dto) // dive into
         {
             var maintenanceRecordComponent = _mapper.Map<MaintenanceRecordComponent>(dto);
             _context.MaintenanceRecordComponents.Add(maintenanceRecordComponent);
@@ -36,35 +59,42 @@ namespace VehicleMaintenance.Services
                 if (record != null)
                     component.LastServiceDate = record.ServiceDate;
 
-                // On replacement — reset mileage and installation date
+                // On replacement — record the vehicle odometer at replacement as the new install baseline
                 if (Enum.Parse<ComponentChangeType>(dto.ComponentChangeType, true) == ComponentChangeType.Replaced)
                 {
-                    component.CurrentMileage = 0;
                     if (record != null)
+                    {
+                        component.InstalledAtVehicleMileage  = record.Mileage ?? component.InstalledAtVehicleMileage; // odometer at replacement = new install baseline
                         component.InstallationDate = record.ServiceDate;
+                    }
+                }
+
+                // Auto-complete any Active predictions linked to this component.
+                // The "Mark as completed" button on the UI is a manual fallback only;
+                // logging a service record for a component is the primary completion trigger.
+                var linkedPredictions = await _context.Predictions
+                    .Where(p => p.VehicleComponentId == dto.ComponentId && p.Status == PredictionStatus.Active)
+                    .ToListAsync();
+                foreach (var pred in linkedPredictions)
+                {
+                    pred.Status = PredictionStatus.Completed;
+                    pred.CompletedAt = DateTime.UtcNow;
                 }
 
                 await _context.SaveChangesAsync();
             }
 
             await _context.Entry(maintenanceRecordComponent).Reference(e => e.Component).LoadAsync();
+
+            var componentId = dto.ComponentId;
+            var parentRecord = await _context.MaintenanceRecords.FindAsync(dto.MaintenanceRecordId);
+            var vehicleId = parentRecord?.VehicleId ?? 0;
+            if (vehicleId > 0)
+                _aiPrediction.TriggerBackgroundUpdate(componentId, vehicleId);
+            else
+                _logger.LogWarning("Background AI skipped — could not resolve vehicleId for record component {ComponentId}.", componentId);
+
             return _mapper.Map<MaintenanceRecordComponentDto>(maintenanceRecordComponent);
-        }
-
-        public async Task<List<MaintenanceRecordComponentDto>> GetAllMaintenanceRecordComponentsAsync()
-        {
-            var maintenanceRecordComponents = await _context.MaintenanceRecordComponents
-                .Include(mrc => mrc.Component)
-                .ToListAsync();
-            return _mapper.Map<List<MaintenanceRecordComponentDto>>(maintenanceRecordComponents);
-        }
-
-        public async Task<MaintenanceRecordComponentDto?> GetMaintenanceRecordComponentByIdAsync(int id)
-        {
-            var maintenanceRecordComponent = await _context.MaintenanceRecordComponents
-                .Include(mrc => mrc.Component)
-                .FirstOrDefaultAsync(mrc => mrc.MaintenanceRecordComponentId == id);
-            return maintenanceRecordComponent is null ? null : _mapper.Map<MaintenanceRecordComponentDto>(maintenanceRecordComponent);
         }
 
         public async Task<MaintenanceRecordComponentDto?> UpdateMaintenanceRecordComponentByIdAsync(int id, UpdateMaintenanceRecordComponentDto dto)
@@ -110,6 +140,7 @@ namespace VehicleMaintenance.Services
         {
             var maintenanceRecordComponent = await _context.MaintenanceRecordComponents
                 .FirstOrDefaultAsync(mrc => mrc.MaintenanceRecordComponentId == id);
+
             if (maintenanceRecordComponent is null)
             {
                 return false;

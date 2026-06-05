@@ -33,7 +33,7 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("vehicle/{vehicleId}")]
         public async Task<IActionResult> GetByVehicle(int vehicleId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] string? serviceType)
         {
-            var records = await _iMaintenanceRecordService.GetByVehicleAsync(
+            var records = await _iMaintenanceRecordService.GetMaintenanceRecordByVehicleAsync(
                 vehicleId, fromDate, toDate, serviceType);
             return Ok(records);
         }

@@ -2,17 +2,12 @@
 {
     public enum ServiceType
     {
-        Engine,         // oil change, timing belt, spark plugs, filters
-        Transmission,   // gearbox service, clutch replacement, fluid change
-        Brakes,         // pad replacement, disc replacement, brake fluid flush
-        Suspension,     // shock absorbers, alignment, wheel bearing
-        Electrical,     // battery, alternator, sensor replacement
-        Cooling,        // coolant flush, radiator, water pump, thermostat
-        Fuel,           // injector cleaning, fuel pump, fuel filter
-        Exhaust,        // DPF cleaning, catalytic converter, lambda sensor
-        Tyres,          // rotation, swap, replacement, balancing, alignment
-        Body,           // windshield, wipers, AC regas, paintwork, mirrors
         Inspection,     // general checkup, MOT, annual service
+        RoutineService, // oil change, filters, fluids, scheduled maintenance
+        Repair,         // any unplanned fix — brakes, suspension, engine, etc.
+        TyreService,    // rotation, swap, replacement, balancing, alignment
+        BodyAndPaint,   // bodywork, paintwork, windshield, AC regas, wipers
+        Electrical,     // battery, alternator, sensor replacement, diagnostics
         Other
     }
     //public enum ServiceType

@@ -4,14 +4,21 @@ using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.MaintenanceRecords;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Services
 {
-    public class MaintenanceRecordService(AppDbContext context, IMapper mapper) : IMaintenanceRecordService
+    public class MaintenanceRecordService(
+        AppDbContext context,
+        IMapper mapper,
+        IServiceScopeFactory scopeFactory,
+        ILogger<MaintenanceRecordService> logger) : IMaintenanceRecordService
     {
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
+        private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+        private readonly ILogger<MaintenanceRecordService> _logger = logger;
 
         public async Task<MaintenanceRecordDto> CreateMaintenanceRecordAsync(CreateMaintenanceRecordDto dto)
         {
@@ -93,6 +100,7 @@ namespace VehicleMaintenance.Services
                 .Include(mr => mr.MaintenanceRecordComponents)
                     .ThenInclude(mrc => mrc.Component)
                 .FirstOrDefaultAsync(mr => mr.MaintenanceRecordId == id);
+
             if (maintenanceRecord is null)
             {
                 return null;
@@ -107,7 +115,7 @@ namespace VehicleMaintenance.Services
             if (dto.Mileage.HasValue)
             {
                 maintenanceRecord.Mileage = dto.Mileage.Value;
-                var vehicle = await _context.Vehicles.FindAsync(maintenanceRecord.VehicleId);
+                var vehicle = await _context.Vehicles.FindAsync(maintenanceRecord.VehicleId); // should be a way to shorten this method
                 if (vehicle != null && dto.Mileage.Value > vehicle.Mileage)
                     vehicle.Mileage = dto.Mileage.Value;
             }
@@ -136,7 +144,7 @@ namespace VehicleMaintenance.Services
             return true;
         }
 
-        public async Task<List<MaintenanceRecordDto>> GetByVehicleAsync(int vehicleId, DateTime? fromDate, DateTime? toDate, string? serviceType)
+        public async Task<List<MaintenanceRecordDto>> GetMaintenanceRecordByVehicleAsync(int vehicleId, DateTime? fromDate, DateTime? toDate, string? serviceType)
         {
             var query = _context.MaintenanceRecords
                 .Where(mr => mr.VehicleId == vehicleId);
@@ -152,10 +160,7 @@ namespace VehicleMaintenance.Services
                 {
                     query = query.Where(mr => mr.ServiceType == parsedServiceType);
                 }
-                else
-                {
-                    return [];
-                }
+                else return [];
             }
 
             var records = await query

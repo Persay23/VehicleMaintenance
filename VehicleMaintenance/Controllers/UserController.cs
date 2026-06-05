@@ -31,6 +31,14 @@ namespace VehicleMaintenance.Controllers
             return Ok(user);
         }
 
+        [HttpGet("me")]
+        public async Task<IActionResult> Me()
+        {
+            var userDto = await _iUserService.GetCurrentUserAsync(User);
+            if (userDto is null) return Unauthorized();
+            return Ok(userDto);
+        }
+
         [HttpPost]
         public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto createUserDto)
         {
@@ -65,14 +73,5 @@ namespace VehicleMaintenance.Controllers
             if (!deleted) return NotFound();
             return NoContent();
         }
-
-        [HttpGet("me")]
-        public async Task<IActionResult> Me()
-        {
-            var userDto = await _iUserService.GetCurrentUserAsync(User);
-            if (userDto is null) return Unauthorized();
-            return Ok(userDto);
-        }
-
     }
 }
