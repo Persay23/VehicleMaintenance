@@ -11,7 +11,7 @@ namespace VehicleMaintenance.Controllers
         private readonly IGeneralExpenseService _service = service;
 
         [HttpGet("vehicle/{vehicleId:int}")]
-        public async Task<ActionResult<List<GeneralExpenseDto>>> GetGeneralExpensesByVehicle(int vehicleId)
+        public async Task<ActionResult<GeneralExpenseDto[]>> GetGeneralExpensesByVehicle(int vehicleId)
         {
             var expenses = await _service.GetGeneralExpensesByVehicleIdAsync(vehicleId);
             return Ok(expenses);

@@ -4,7 +4,7 @@ namespace VehicleMaintenance.Repositories.Interfaces
 {
     public interface IGeneralExpenseRepository
     {
-        Task<List<GeneralExpense>> GetGeneralExpensesByVehicleIdAsync(int vehicleId);
+        Task<GeneralExpense[]> GetGeneralExpensesByVehicleIdAsync(int vehicleId);
         Task<List<GeneralExpense>> GetGeneralExpensesByUserIdAsync(string userId);
         Task<GeneralExpense?> GetGeneralExpenseByIdAsync(int id);
         Task AddAsync(GeneralExpense expense);

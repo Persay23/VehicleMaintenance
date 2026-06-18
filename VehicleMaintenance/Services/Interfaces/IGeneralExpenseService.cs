@@ -4,7 +4,7 @@ namespace VehicleMaintenance.Services.Interfaces
 {
     public interface IGeneralExpenseService
     {
-        Task<List<GeneralExpenseDto>> GetGeneralExpensesByVehicleIdAsync(int vehicleId);
+        Task<GeneralExpenseDto[]> GetGeneralExpensesByVehicleIdAsync(int vehicleId);
         Task<List<GeneralExpenseDto>> GetGeneralExpensesByUserIdAsync(string userId);
         Task<GeneralExpenseDto?> GetGeneralExpenseByIdAsync(int id);
         Task<GeneralExpenseDto> CreateGeneralExpenseAsync(CreateGeneralExpenseDto dto);

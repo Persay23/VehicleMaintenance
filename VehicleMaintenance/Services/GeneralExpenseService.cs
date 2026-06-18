@@ -12,7 +12,7 @@ namespace VehicleMaintenance.Services
         private readonly IGeneralExpenseRepository _repository = repository;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<List<GeneralExpenseDto>> GetGeneralExpensesByVehicleIdAsync(int vehicleId)
+        public async Task<GeneralExpenseDto[]> GetGeneralExpensesByVehicleIdAsync(int vehicleId)
         {
             var expenses = await _repository.GetGeneralExpensesByVehicleIdAsync(vehicleId);
             return [.. expenses.Select(MapToDto)];

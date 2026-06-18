@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Repositories.Interfaces;
-using VehicleMaintenance.Models.Enums;
 
 namespace VehicleMaintenance.Repositories
 {
@@ -10,11 +9,12 @@ namespace VehicleMaintenance.Repositories
     {
         private readonly AppDbContext _context = context;
 
-        public async Task<List<GeneralExpense>> GetGeneralExpensesByVehicleIdAsync(int vehicleId)
+        public async Task<GeneralExpense[]> GetGeneralExpensesByVehicleIdAsync(int vehicleId)
         {
             return await _context.GeneralExpenses
                 .Where(e => e.VehicleId == vehicleId)
-                .ToListAsync();
+                .AsNoTracking()
+                .ToArrayAsync();
         }
 
         public async Task<List<GeneralExpense>> GetGeneralExpensesByUserIdAsync(string userId)
