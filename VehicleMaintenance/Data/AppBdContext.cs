@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Prediction> Predictions { get; set; }
     public DbSet<GeneralExpense> GeneralExpenses { get; set; }
     public DbSet<UserDrivingProfile> UserDrivingProfiles { get; set; }
+    public DbSet<AiDiagnosis> AiDiagnoses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,6 +78,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasOne(p => p.User)
             .WithOne(u => u.DrivingProfile)
             .HasForeignKey<UserDrivingProfile>(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AiDiagnosis>()
+            .HasOne(d => d.Vehicle)
+            .WithMany(v => v.AiDiagnoses)
+            .HasForeignKey(d => d.VehicleId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

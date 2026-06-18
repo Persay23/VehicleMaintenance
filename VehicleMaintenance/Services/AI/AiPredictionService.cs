@@ -1,6 +1,8 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.AI;
+using VehicleMaintenance.Models;
 using VehicleMaintenance.Models.AI;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
@@ -15,6 +17,8 @@ public class AiPredictionService(
     private readonly IServiceScopeFactory  _scopeFactory = scopeFactory;
     private readonly IGeminiService        _gemini       = gemini;
     private readonly ILogger               _logger       = logger;
+
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     // ═══════════════════════════════════════════
     // BACKGROUND TRIGGER
@@ -88,8 +92,7 @@ public class AiPredictionService(
         var profile = await context.UserDrivingProfiles
             .FirstOrDefaultAsync(p => p.UserId == component.Vehicle.UserId);
 
-        var kmSinceInstall   = component.Vehicle.Mileage - component.InstalledAtVehicleMileage;
-        var daysSinceInstall = (DateTime.UtcNow.Date - component.InstallationDate.Date).Days;
+        var health = ComponentHealthCalculator.Compute(component, component.Vehicle.Mileage);
 
         var historyPoints  = history.Select(h => (km: h.MaintenanceRecord.Mileage ?? 0, date: h.MaintenanceRecord.ServiceDate)).ToList();
         var avgKmPerYear   = ComputeAvgKmPerYear(component.Vehicle.AverageKmPerYear, profile, historyPoints);
@@ -102,8 +105,7 @@ public class AiPredictionService(
                 component,
                 history,
                 profile,
-                kmSinceInstall,
-                daysSinceInstall,
+                health,
                 avgKmPerMonth);
 
             var result = await _gemini.AskJsonAsync<AiPredictionResult>(prompt);
@@ -278,7 +280,7 @@ public class AiPredictionService(
         "This is an AI-assisted assessment only. Always consult a qualified mechanic " +
         "before making repair decisions or continuing to drive if safety may be affected.";
 
-    public async Task<DiagnoseResponseDto?> DiagnoseAsync(int vehicleId, string symptom)
+    public async Task<AiDiagnosisDto?> DiagnoseAsync(int vehicleId, string symptom)
     {
         using var scope = _scopeFactory.CreateScope();
         var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -308,16 +310,66 @@ public class AiPredictionService(
         var result = await _gemini.AskJsonAsync<AiDiagnosisResult>(prompt);
         if (result is null) return null;
 
-        return new DiagnoseResponseDto
+        var causes    = result.LikelyCauses       ?? [];
+        var actions   = result.RecommendedActions ?? [];
+        var related   = result.RelatedComponents  ?? [];
+        var urgency   = result.Urgency            ?? "safe";
+        var urgencyEx = result.UrgencyExplanation ?? "Unable to determine urgency from available data.";
+
+        var entity = new AiDiagnosis
         {
-            LikelyCauses       = result.LikelyCauses       ?? [],
-            Urgency            = result.Urgency            ?? "safe",
-            UrgencyExplanation = result.UrgencyExplanation ?? "Unable to determine urgency from available data.",
-            RecommendedActions = result.RecommendedActions ?? [],
-            RelatedComponents  = result.RelatedComponents  ?? [],
-            Disclaimer         = DiagnosisDisclaimer,
+            VehicleId              = vehicleId,
+            SymptomDescription     = symptom,
+            Urgency                = urgency,
+            Summary                = urgencyEx,
+            LikelyCauses           = JsonSerializer.Serialize(causes),
+            RecommendedActions     = JsonSerializer.Serialize(actions),
+            RelatedComponentNames  = related.Count > 0 ? JsonSerializer.Serialize(related) : null,
+            CreatedAt              = DateTime.UtcNow
         };
+
+        context.AiDiagnoses.Add(entity);
+        await context.SaveChangesAsync();
+
+        return MapToDto(entity, causes, actions, related);
     }
+
+    public async Task<List<AiDiagnosisDto>> GetDiagnosisHistoryAsync(int vehicleId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var diagnoses = await context.AiDiagnoses
+            .Where(d => d.VehicleId == vehicleId)
+            .OrderBy(d => d.CreatedAt)
+            .ToListAsync();
+
+        return diagnoses.Select(d => MapToDto(
+            d,
+            JsonSerializer.Deserialize<List<string>>(d.LikelyCauses,       _jsonOptions) ?? [],
+            JsonSerializer.Deserialize<List<string>>(d.RecommendedActions,  _jsonOptions) ?? [],
+            d.RelatedComponentNames is not null
+                ? JsonSerializer.Deserialize<List<string>>(d.RelatedComponentNames, _jsonOptions) ?? []
+                : []
+        )).ToList();
+    }
+
+    private static AiDiagnosisDto MapToDto(
+        AiDiagnosis entity,
+        List<string> causes,
+        List<string> actions,
+        List<string> related) => new()
+    {
+        AiDiagnosisId      = entity.AiDiagnosisId,
+        Symptom            = entity.SymptomDescription,
+        Urgency            = entity.Urgency,
+        UrgencyExplanation = entity.Summary,
+        LikelyCauses       = causes,
+        RecommendedActions = actions,
+        RelatedComponents  = related,
+        Disclaimer         = DiagnosisDisclaimer,
+        CreatedAt          = entity.CreatedAt,
+    };
 
     // ═══════════════════════════════════════════
     // SHARED HELPERS
@@ -343,7 +395,7 @@ public class AiPredictionService(
         return confidence;
     }
 
-    // Priority: ① vehicle stored avg ② profile annual km ③ compute from record span.
+    // Priority: 1 vehicle stored avg 2 profile annual km 3 compute from record span.
     // Pass profile=null when the prompt already receives it directly (vehicle suggestions).
     private static int? ComputeAvgKmPerYear(
         int? vehicleStoredAvg,

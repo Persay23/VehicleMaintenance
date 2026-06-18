@@ -7,5 +7,6 @@ public interface IAiPredictionService
     void TriggerBackgroundUpdate(int componentId, int vehicleId);
     Task GenerateComponentPredictionAsync(int componentId, bool forceRefresh = false);
     Task GenerateVehicleSuggestionsAsync(int vehicleId, bool forceRefresh = false);
-    Task<DiagnoseResponseDto?> DiagnoseAsync(int vehicleId, string symptom);
+    Task<AiDiagnosisDto?> DiagnoseAsync(int vehicleId, string symptom);
+    Task<List<AiDiagnosisDto>> GetDiagnosisHistoryAsync(int vehicleId);
 }

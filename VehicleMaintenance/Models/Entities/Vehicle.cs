@@ -21,5 +21,6 @@ namespace VehicleMaintenance.Models.Entities
         public List<MaintenanceRecord> MaintenanceRecords { get; set; } = [];
         public List<Prediction> Predictions { get; set; } = [];
         public List<GeneralExpense> GeneralExpenses { get; set; } = [];
+        public List<AiDiagnosis> AiDiagnoses { get; set; } = [];
     }
 }

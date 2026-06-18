@@ -1,6 +1,6 @@
 # AutoCare — Backend
 
-REST API for a mobile-first vehicle maintenance tracking application, built as a diploma project. Handles user management, vehicle and component tracking, maintenance records, fuel entries, cost summaries, and service predictions.
+REST API for a mobile-first vehicle maintenance tracking application, built as a diploma project. Handles user management, vehicle and component tracking, maintenance records, fuel entries, cost summaries, general expenses, driving profiles, and AI-powered service predictions and diagnostics via Google Gemini.
 
 **Frontend repo:** [autocare-frontend](https://github.com/Persay23/autocare-frontend)
 
@@ -16,6 +16,7 @@ REST API for a mobile-first vehicle maintenance tracking application, built as a
 | ORM | Entity Framework Core |
 | Database | MS SQL Server |
 | Object mapping | AutoMapper 14 |
+| AI | Google Gemini REST API (`gemini-2.5-flash`, via `HttpClient`) |
 | API docs | Swagger / Swashbuckle |
 
 ---
@@ -25,11 +26,16 @@ REST API for a mobile-first vehicle maintenance tracking application, built as a
 - Cookie-based auth — register, login, logout via ASP.NET Core Identity
 - Full vehicle CRUD with make, model, year, engine, fuel type, transmission, and odometer
 - Vehicle component tracking with expected lifetime (km + years) and health calculation
+- `ComponentHealthCalculator` as the single source of truth for all health math — used by the component service, AI service, and prompt builder
 - Maintenance records with per-component cost and labor breakdown via a bridge table
 - Fuel/liquid entry log with type, amount, cost, mileage, and station notes
+- General expenses tracking — one-off and recurring costs (insurance, tax, fines, etc.) with recurrence scheduling
+- User driving profile — annual km, typical trip distance, highway ratio, driving style
 - Monthly cost summaries and full event timeline per vehicle
-- Service predictions with confidence scoring and status tracking (Active / Completed / Ignored)
-- Date-range and type filtering on records and liquid entries
+- AI-generated per-component service predictions — estimated next service date, remaining km, health score, recommendation, and confidence score capped by maintenance history depth
+- AI-generated vehicle-level suggestions — up to five ranked recommendations derived from the vehicle's component set and recent records
+- AI symptom diagnosis — structured differential with likely causes, urgency, recommended actions, and affected components
+- AI calls run through a dedicated `GeminiService` abstraction; all prompt construction is handled by a `PromptBuilderService` split into domain-specific partial classes
 
 ---
 
@@ -39,16 +45,19 @@ The project follows a **Controller → Service → EF Core** layered pattern. Ea
 
 ```
 VehicleMaintenance/
-├── Controllers/              # HTTP layer — thin, delegates to services
+├── Controllers/
 │   ├── AuthController.cs
-│   ├── UsersController.cs
-│   ├── VehiclesController.cs
-│   ├── VehicleComponentsController.cs
-│   ├── MaintenanceRecordsController.cs
-│   ├── MaintenanceRecordComponentsController.cs
-│   ├── LiquidEntriesController.cs (fuel)
-│   └── PredictionsController.cs
-├── Services/                 # Business logic
+│   ├── UserController.cs
+│   ├── VehicleController.cs
+│   ├── VehicleComponentController.cs
+│   ├── MaintenanceRecordController.cs
+│   ├── MaintenanceRecordComponentController.cs
+│   ├── FuelEntryController.cs
+│   ├── PredictionController.cs
+│   ├── GeneralExpenseController.cs
+│   ├── UserDrivingProfileController.cs
+│   └── AIController.cs
+├── Services/
 │   ├── Interfaces/
 │   ├── VehicleService.cs
 │   ├── VehicleComponentService.cs
@@ -56,24 +65,45 @@ VehicleMaintenance/
 │   ├── MaintenanceRecordComponentService.cs
 │   ├── FuelEntryService.cs
 │   ├── PredictionService.cs
-│   └── UserService.cs
+│   ├── GeneralExpenseService.cs
+│   ├── UserDrivingProfileService.cs
+│   ├── UserService.cs
+│   └── AI/
+│       ├── IAiPredictionService.cs
+│       ├── AiPredictionService.cs  # background updates, predictions, suggestions, diagnosis
+│       ├── IGeminiService.cs
+│       ├── GeminiService.cs        # direct Gemini REST API client
+│       └── Prompts/
+│           ├── PromptBuilderService.cs             # shared helpers + vehicle summary
+│           ├── PromptBuilderService.Prediction.cs  # per-component prediction prompt
+│           ├── PromptBuilderService.Suggestions.cs # vehicle-level suggestions prompt
+│           └── PromptBuilderService.Diagnosis.cs   # symptom diagnosis prompt
 ├── Models/
-│   ├── Entities/             # EF Core entity classes
-│   └── Enums/                # Shared enums (ServiceType, ComponentType, etc.)
-├── DTOs/                     # Request/response shapes, one folder per domain
+│   ├── ComponentHealthCalculator.cs  # single source of truth — Compute() → ComponentMeasurements
+│   ├── ComponentStateCalculator.cs   # DeriveState() — maps km/age usage to state label
+│   ├── Entities/                     # EF Core entity classes
+│   ├── Enums/                        # ComponentType, ServiceType, PredictionStatus, etc.
+│   └── AI/
+│       ├── AiPredictionResult.cs
+│       ├── AiSuggestion.cs
+│       └── AiDiagnosisResult.cs
+├── DTOs/
+│   ├── AI/                           # DiagnoseResponseDto
 │   ├── Auth/
 │   ├── Users/
 │   ├── Vehicles/
 │   ├── VehicleComponents/
 │   ├── MaintenanceRecords/
 │   ├── MaintenanceRecordComponents/
-│   ├── LiquidEntries/
-│   └── Predictions/
+│   ├── FuelEntry/
+│   ├── Prediction/
+│   ├── GeneralExpense/
+│   └── UserDrivingProfile/
 ├── Data/
-│   └── AppDbContext.cs       # EF Core DbContext + Identity
+│   └── AppDbContext.cs
 ├── Mappings/
-│   └── MappingProfile.cs     # All AutoMapper profiles in one place
-└── Migrations/               # EF Core migration history
+│   └── MappingProfile.cs
+└── Migrations/
 ```
 
 ---
@@ -82,20 +112,24 @@ VehicleMaintenance/
 
 ```
 USER (IdentityUser)
+ ├── USER_DRIVING_PROFILE (1:1)
  └── VEHICLE (1:N)
       ├── VEHICLE_COMPONENT (1:N)
       │    └── MAINTENANCE_RECORD_COMPONENT (bridge, N:M)
       ├── MAINTENANCE_RECORD (1:N)
       │    └── MAINTENANCE_RECORD_COMPONENT (1:N)
       ├── LIQUID_ENTRY (1:N)
-      └── PREDICTION (1:N)
+      ├── PREDICTION (1:N)
+      └── GENERAL_EXPENSE (1:N)
 ```
 
 **Key design decisions:**
-- `User.Id` is a GUID string inherited from `IdentityUser` — no separate users table primary key
+- `User.Id` is a GUID string inherited from `IdentityUser` — no separate users table PK
 - All cost/decimal fields use `precision(18, 2)`
-- Component health is the **worst-of-two**: `Min(kmLifetimePercent, yearsLifetimePercent)` — a component that has covered 90% of its expected km but is only 20% through its expected years is at 20% health
-- Maintenance records and components are linked through `MaintenanceRecordComponent`, which carries individual `laborCost`, `partsCost`, and `technicianName` — one visit can cover multiple components with separate cost breakdowns
+- Component health is the **worst-of-two**: `Min(kmLifetimePercent, yearsLifetimePercent)` — a component at 90% km life but only 20% year life is at 20% health
+- Maintenance records and components are linked through `MaintenanceRecordComponent`, which carries individual `laborCost`, `partsCost`, `otherCost`, and `technicianName` — one visit can cover multiple components with separate cost breakdowns
+- AI results are stored directly on `VehicleComponent` (denormalized) to avoid joins on the hot path; `AiGeneratedAt` is used as a staleness guard
+- Predictions are vehicle-level suggestions (not component predictions) and live in a separate `Prediction` table
 
 ---
 
@@ -106,6 +140,7 @@ USER (IdentityUser)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - MS SQL Server or SQL Server Express
 - Visual Studio 2022 or VS Code with C# extension
+- A Google Gemini API key (free tier at [aistudio.google.com](https://aistudio.google.com))
 
 ### Setup
 
@@ -115,12 +150,16 @@ git clone https://github.com/Persay23/VehicleMaintenance.git
 cd VehicleMaintenance
 ```
 
-**2. Configure the connection string**
+**2. Configure the connection string and AI key**
 
 Edit `VehicleMaintenance/appsettings.json`:
 ```json
 "ConnectionStrings": {
   "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=VehicleMaintenanceDb;Trusted_Connection=True;TrustServerCertificate=True"
+},
+"AiService": {
+  "ApiKey": "<your-gemini-api-key>",
+  "Model": "gemini-2.5-flash"
 }
 ```
 
@@ -144,10 +183,12 @@ https://localhost:7235/swagger
 
 ## API Reference
 
+All endpoints require authentication (session cookie) unless marked **—**.
+
 ### Auth
 
-| Method | Endpoint | Description | Auth required |
-|--------|----------|-------------|:---:|
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|:----:|
 | POST | `/api/auth/register` | Create account | — |
 | POST | `/api/auth/login` | Login (sets session cookie) | — |
 | POST | `/api/auth/logout` | Invalidate session | ✓ |
@@ -156,7 +197,7 @@ https://localhost:7235/swagger
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/users/me` | Get current user (used for session check) |
+| GET | `/api/users/me` | Current user (session check) |
 | GET | `/api/users/{id}` | Get user by ID |
 | PATCH | `/api/users/{id}` | Update profile |
 | DELETE | `/api/users/{id}` | Delete account |
@@ -166,7 +207,7 @@ https://localhost:7235/swagger
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/vehicles` | All vehicles for authenticated user |
+| GET | `/api/vehicles` | All vehicles for current user |
 | GET | `/api/vehicles/{id}` | Vehicle by ID |
 | POST | `/api/vehicles` | Add vehicle |
 | PATCH | `/api/vehicles/{id}` | Update vehicle |
@@ -184,6 +225,7 @@ https://localhost:7235/swagger
 | PATCH | `/api/vehiclecomponents/{id}` | Update component |
 | DELETE | `/api/vehiclecomponents/{id}` | Delete component |
 | GET | `/api/vehiclecomponents/vehicle/{vehicleId}/health` | Health data for all components |
+| GET | `/api/vehiclecomponents/{id}/history` | Service history for a component |
 
 ### Maintenance Records
 
@@ -218,11 +260,39 @@ https://localhost:7235/swagger
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/predictions/vehicle/{vehicleId}` | Predictions for vehicle |
+| GET | `/api/predictions/vehicle/{vehicleId}` | Active predictions for vehicle |
 | GET | `/api/predictions/{id}` | Prediction by ID |
 | POST | `/api/predictions` | Create prediction |
 | PATCH | `/api/predictions/{id}` | Update status (Active / Completed / Ignored) |
 | DELETE | `/api/predictions/{id}` | Delete prediction |
+
+### General Expenses
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/generalexpense/vehicle/{vehicleId}` | Expenses for a vehicle |
+| GET | `/api/generalexpense/user/{userId}` | All expenses for a user |
+| GET | `/api/generalexpense/{id}` | Expense by ID |
+| POST | `/api/generalexpense` | Create expense |
+| PATCH | `/api/generalexpense/{id}` | Update expense |
+| DELETE | `/api/generalexpense/{id}` | Delete expense |
+
+### Driving Profile
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/userdrivingprofile/{userId}` | Get profile |
+| POST | `/api/userdrivingprofile` | Create profile |
+| PATCH | `/api/userdrivingprofile/{userId}` | Update profile |
+
+### AI
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/ai/predict/{componentId}` | Force-regenerate component AI prediction |
+| POST | `/api/ai/suggestions/{vehicleId}` | Force-regenerate vehicle-level AI suggestions |
+| POST | `/api/ai/diagnose/{vehicleId}` | Diagnose symptom — returns structured differential |
+| GET | `/api/ai/diagnose/{vehicleId}` | Diagnosis history for a vehicle |
 
 ---
 
@@ -238,29 +308,45 @@ Email confirmation and password-reset emails are disabled (`NoOpEmailSender`) �
 
 ## Health Calculation
 
-Component health is exposed through `GET /api/vehiclecomponents/vehicle/{vehicleId}/health`.
+Component health is computed by `ComponentHealthCalculator.Compute(component, currentMileage)`, which returns a `ComponentMeasurements` record — the single source of truth used by every service that needs health data.
 
-Each component returns:
-- `kmLifetimePercent` — percentage of expected km lifetime remaining
-- `yearsLifetimePercent` — percentage of expected year lifetime remaining
-- `remainingKm` — km left before expected replacement
-- `status` — `Good` / `Monitor` / `Warning` / `Critical` based on the lower of the two percentages
+Each component exposes:
+- `KmUsed` / `DaysUsed` — usage since installation
+- `RemainingKm` — km left before expected replacement
+- `KmRemainingPercent` / `YearsRemainingPercent` — percentage lifetime remaining for each dimension
+- `State` — derived label based on the lower of the two percentages
 
-| Status | Health % |
+| State | Remaining health |
 |---|---|
+| Perfect | > 75% |
+| Good | 51 – 75% |
+| Normal | 31 – 50% |
+| Repair | 16 – 30% |
 | Critical | ≤ 15% |
-| Warning | 16–30% |
-| Monitor | 31–50% |
-| Good | 51–74% |
-| Perfect | ≥ 75% |
+
+`ComponentStateCalculator.DeriveState` encapsulates the threshold logic so the same rules apply everywhere: the component service, the prompt builder, and the AI service all call the same code.
 
 ---
 
-## Known Limitations
+## AI Integration
 
-- Prediction confidence scores and dates are currently set manually — automated inference from maintenance history is planned
-- Repository pattern is planned but not yet implemented — services access `AppDbContext` directly
-- No refresh-token mechanism — sessions expire based on the Identity cookie lifetime
+AI features are handled by `AiPredictionService`, which depends on `IGeminiService` (a thin `HttpClient` wrapper over the Gemini REST API) and `PromptBuilderService` (a static class split into domain partial files).
+
+**Per-component predictions** (`GenerateComponentPredictionAsync`):
+- Builds a prompt from the component's health, maintenance history, vehicle profile, and driving data
+- Parses the model response into `AiPredictionResult` (date, km estimate, health score, recommendation, reasoning)
+- Caps the raw confidence score based on history depth (0 records → max 40%, 1 → 60%, 2 → 75%, 3+ → 85%) and adjusts for manual schedule signals and driving profile presence
+- Stores results directly on `VehicleComponent`; re-runs are guarded by a 24-hour staleness window unless `forceRefresh = true`
+
+**Vehicle-level suggestions** (`GenerateVehicleSuggestionsAsync`):
+- Summarises all components, recent records, and the driving profile into a single prompt
+- Returns up to 5 prioritised suggestions (`AiSuggestion` list), each validated to belong to the correct vehicle
+- Protected by a 10-minute cooldown to prevent duplicate runs when multiple components are saved in one action
+
+**Diagnosis** (`DiagnoseAsync`):
+- Accepts a free-text symptom string
+- Returns a `DiagnoseResponseDto` with likely causes, urgency level, urgency explanation, recommended actions, related components, and a standard disclaimer
+- A trigger in `AIController` fires background component + suggestion updates automatically after each diagnosis
 
 ---
 

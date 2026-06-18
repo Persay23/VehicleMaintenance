@@ -106,7 +106,7 @@ public class AiController(
     /// Not cached — every call is fresh.
     /// </summary>
     [HttpPost("diagnose/{vehicleId:int}")]
-    public async Task<ActionResult<DiagnoseResponseDto>> Diagnose(int vehicleId, [FromBody] DiagnoseRequestDto dto)
+    public async Task<ActionResult<AiDiagnosisDto>> Diagnose(int vehicleId, [FromBody] DiagnoseRequestDto dto)
     {
         var accessError = await CheckVehicleAccessAsync(vehicleId);
         if (accessError is not null) return (ActionResult)accessError;
@@ -123,6 +123,16 @@ public class AiController(
         {
             return StatusCode(500, new { error = $"Diagnosis failed: {ex.Message}" });
         }
+    }
+
+    [HttpGet("diagnose/{vehicleId:int}")]
+    public async Task<ActionResult<List<AiDiagnosisDto>>> GetDiagnosisHistory(int vehicleId)
+    {
+        var accessError = await CheckVehicleAccessAsync(vehicleId);
+        if (accessError is not null) return (ActionResult)accessError;
+
+        var history = await _aiPrediction.GetDiagnosisHistoryAsync(vehicleId);
+        return Ok(history);
     }
 
     // ═══════════════════════════════════════════
