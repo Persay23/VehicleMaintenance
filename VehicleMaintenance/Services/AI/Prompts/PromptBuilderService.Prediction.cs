@@ -6,18 +6,14 @@ namespace VehicleMaintenance.Services.AI;
 public static partial class PromptBuilderService
 {
     public static string BuildPredictionPrompt(
-        Vehicle vehicle,
-        VehicleComponent component,
+        Vehicle                          vehicle,
+        VehicleComponent                 component,
         List<MaintenanceRecordComponent> history,
-        UserDrivingProfile? profile,
-        int kmSinceInstall,
-        int daysSinceInstall,
-        double? avgKmPerMonth)
+        UserDrivingProfile?              profile,
+        ComponentMeasurements            health,
+        double?                          avgKmPerMonth)
     {
-        var today        = DateTime.UtcNow.Date;
-        var derivedState = ComponentStateCalculator.DeriveState(
-            component.ExpectedLifetimeKm, kmSinceInstall,
-            component.ExpectedLifetimeYears, daysSinceInstall);
+        var today = DateTime.UtcNow.Date;
 
         var jsonResponseFormat = """
             {
@@ -66,17 +62,17 @@ public static partial class PromptBuilderService
             Type:             {component.ComponentType}
             Brand:            {component.VehicleComponentBrand ?? "Unknown"}
             Part number:      {component.PartNumber ?? "Not specified"}
-            Current state:    {derivedState}
+            Current state:    {health.State}
 
             Installation date:      {component.InstallationDate:yyyy-MM-dd}
             Mileage at install:     {component.InstalledAtVehicleMileage} km
-            Days since install:     {daysSinceInstall} days ({daysSinceInstall / 365.0:F1} years)
-            Km since install:       {kmSinceInstall} km
+            Days since install:     {health.DaysUsed} days ({health.DaysUsed / 365.0:F1} years)
+            Km since install:       {health.KmUsed} km
 
             Rated km lifetime:      {(component.ExpectedLifetimeKm > 0 ? $"{component.ExpectedLifetimeKm} km" : "Not configured")}
             Rated year lifetime:    {(component.ExpectedLifetimeYears > 0 ? $"{component.ExpectedLifetimeYears} years" : "Not configured")}
-            Km used (% of rated):   {(component.ExpectedLifetimeKm > 0 ? $"{(kmSinceInstall * 100.0 / component.ExpectedLifetimeKm):F1}%" : "N/A — km lifetime not configured")}
-            Time used (% of rated): {(component.ExpectedLifetimeYears > 0 ? $"{(daysSinceInstall / (component.ExpectedLifetimeYears * 365.0) * 100):F1}%" : "N/A — year lifetime not configured")}
+            Km used (% of rated):   {(component.ExpectedLifetimeKm > 0 ? $"{(100.0 - health.KmRemainingPercent):F1}%" : "N/A — km lifetime not configured")}
+            Time used (% of rated): {(component.ExpectedLifetimeYears > 0 ? $"{(100.0 - health.YearsRemainingPercent):F1}%" : "N/A — year lifetime not configured")}
 
             {(component.NextServiceRecommendedKm.HasValue
                 ? $"⚠ MECHANIC RECOMMENDATION: Next service at {component.NextServiceRecommendedKm} km (treat as high-confidence anchor)"
@@ -107,7 +103,7 @@ public static partial class PromptBuilderService
             ═══════════════════════════════════════════════
             These are engineering-based adjustments. You MUST apply them
             to modify the rated lifetime before calculating remaining life.
-            Do not ignore them. Show the adjustment in your reasoning.
+            Do not ignore the health. Show the adjustment in your reasoning.
 
             DRIVING STYLE multipliers (apply to km-based lifetime for friction components):
               Gentle:     × 1.20  (lasts 20% longer than rated)

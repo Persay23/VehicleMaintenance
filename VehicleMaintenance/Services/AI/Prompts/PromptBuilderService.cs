@@ -55,10 +55,8 @@ public static partial class PromptBuilderService
 
         return string.Join("\n", vehicle.VehicleComponents.Select(c =>
         {
-            var kmUsed   = Math.Max(0, vehicle.Mileage - c.InstalledAtVehicleMileage);
-            var daysOld  = Math.Max(0, (today - c.InstallationDate.Date).Days);
-            var yearsOld = daysOld / 365.25;
-            var state    = ComponentStateCalculator.DeriveState(c.ExpectedLifetimeKm, kmUsed, c.ExpectedLifetimeYears, daysOld);
+            var health   = ComponentHealthCalculator.Compute(c, vehicle.Mileage, referenceDate);
+            var yearsOld = health.DaysUsed / 365.25;
 
             var name  = c.VehicleComponentName ?? c.ComponentType.ToString();
             var brand = !string.IsNullOrWhiteSpace(c.VehicleComponentBrand) ? $" ({c.VehicleComponentBrand})" : "";
@@ -72,20 +70,20 @@ public static partial class PromptBuilderService
             }
             else if (c.ExpectedLifetimeKm > 0)
             {
-                var kmPct     = Math.Min(100.0, kmUsed * 100.0 / c.ExpectedLifetimeKm);
-                var remaining = c.AiEstimatedRemainingKm ?? Math.Max(0, c.ExpectedLifetimeKm - kmUsed);
-                kmPart = $"{kmUsed}/{c.ExpectedLifetimeKm} km ({kmPct:F0}% used), ~{remaining} km left";
+                var kmUsedPct = Math.Min(100.0, 100.0 - health.KmRemainingPercent);
+                var remaining = c.AiEstimatedRemainingKm ?? health.RemainingKm;
+                kmPart = $"{health.KmUsed}/{c.ExpectedLifetimeKm} km ({kmUsedPct:F0}% used), ~{remaining} km left";
             }
             else
             {
-                kmPart = $"{kmUsed} km since install (no km limit set)";
+                kmPart = $"{health.KmUsed} km since install (no km limit set)";
             }
 
             string agePart;
             if (c.ExpectedLifetimeYears > 0)
             {
-                var yearsPct = Math.Min(100.0, yearsOld / c.ExpectedLifetimeYears * 100);
-                agePart = $"{yearsOld:F1}/{c.ExpectedLifetimeYears} yrs ({yearsPct:F0}% used)";
+                var yearsUsedPct = Math.Min(100.0, 100.0 - health.YearsRemainingPercent);
+                agePart = $"{yearsOld:F1}/{c.ExpectedLifetimeYears} yrs ({yearsUsedPct:F0}% used)";
             }
             else
             {
@@ -97,7 +95,7 @@ public static partial class PromptBuilderService
                 ? $" | AI next: {c.AiEstimatedNextServiceDate:yyyy-MM-dd}"
                 : "";
 
-            return $"[#{c.VehicleComponentId}] {name}{brand} — {c.ComponentType} | State: {state} | {kmPart} | installed {installMonth}, {agePart}{aiNextService}";
+            return $"[#{c.VehicleComponentId}] {name}{brand} — {c.ComponentType} | State: {health.State} | {kmPart} | installed {installMonth}, {agePart}{aiNextService}";
         }));
     }
 

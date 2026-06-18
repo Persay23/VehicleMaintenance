@@ -153,8 +153,6 @@ namespace VehicleMaintenance.Services
 
         private static ComponentHealthDto CalculateHealth(VehicleComponent c, int vehicleCurrentMileage)
         {
-            var now = DateTime.UtcNow;
-
             // Unknown: install mileage reference not set (vehicle already has mileage → km calc unreliable)
             // Unknown: no lifetime limits configured at all
             bool kmRefMissing = c.InstalledAtVehicleMileage == 0 && vehicleCurrentMileage > 0;
@@ -179,36 +177,22 @@ namespace VehicleMaintenance.Services
                 };
             }
 
-            // InstalledAtVehicleMileage = vehicle odometer at install; subtract to get km used on this component
-            var kmUsed      = Math.Max(0, vehicleCurrentMileage - c.InstalledAtVehicleMileage);
-            var remainingKm = c.ExpectedLifetimeKm - kmUsed;
-            var kmPercent   = c.ExpectedLifetimeKm > 0
-                ? Math.Max(0, (double)remainingKm / c.ExpectedLifetimeKm * 100)
-                : 100;
-
-            var yearsUsed = (now - c.InstallationDate).TotalDays / 365.25;
-            var yearsPercent = c.ExpectedLifetimeYears > 0
-                ? Math.Max(0, (1 - yearsUsed / c.ExpectedLifetimeYears) * 100)
-                : 100;
-
-            var daysUsed = (int)(now - c.InstallationDate).TotalDays;
-            var computedState = ComponentStateCalculator.DeriveState(
-                c.ExpectedLifetimeKm, kmUsed, c.ExpectedLifetimeYears, daysUsed);
+            var health = ComponentHealthCalculator.Compute(c, vehicleCurrentMileage);
 
             return new ComponentHealthDto
             {
-                ComponentId          = c.VehicleComponentId,
-                VehicleComponentName = c.VehicleComponentName,
+                ComponentId           = c.VehicleComponentId,
+                VehicleComponentName  = c.VehicleComponentName,
                 VehicleComponentBrand = c.VehicleComponentBrand,
-                ComponentType        = c.ComponentType.ToString(),
-                CurrentState         = computedState,
-                InstallationDate     = c.InstallationDate,
-                RemainingKm          = Math.Max(0, remainingKm),
-                KmLifetimePercent    = Math.Round(kmPercent, 1),
-                YearsLifetimePercent = Math.Round(yearsPercent, 1),
-                Status               = computedState,
+                ComponentType         = c.ComponentType.ToString(),
+                CurrentState          = health.State,
+                InstallationDate      = c.InstallationDate,
+                RemainingKm           = health.RemainingKm,
+                KmLifetimePercent     = health.KmRemainingPercent,
+                YearsLifetimePercent  = health.YearsRemainingPercent,
+                Status                = health.State,
                 AiEstimatedNextServiceDate = c.AiEstimatedNextServiceDate,
-                AiGeneratedAt        = c.AiGeneratedAt,
+                AiGeneratedAt         = c.AiGeneratedAt,
             };
         }
     }
