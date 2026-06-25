@@ -21,14 +21,41 @@ public class GeminiService : IGeminiService
 
     public async Task<string> AskAsync(string prompt, CancellationToken ct = default)
     {
-        var url = $"https://generativelanguage.googleapis.com/v1beta" +
-                  $"/models/{_model}:generateContent?key={_apiKey}";
-
         var body = new
         {
-            contents = new[] { new { parts = new[] { new { text = prompt } } } },
+            contents = new[] { new { parts = new object[] { new { text = prompt } } } },
             generationConfig = new { responseMimeType = "application/json" }
         };
+
+        return await GenerateAsync(body, ct);
+    }
+
+    public async Task<T?> AskJsonAsync<T>(string prompt, byte[] imageBytes, string mimeType, CancellationToken ct = default)
+    {
+        var body = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    parts = new object[]
+                    {
+                        new { text = prompt },
+                        new { inlineData = new { mimeType, data = Convert.ToBase64String(imageBytes) } }
+                    }
+                }
+            },
+            generationConfig = new { responseMimeType = "application/json" }
+        };
+
+        var raw = await GenerateAsync(body, ct);
+        return JsonSerializer.Deserialize<T>(raw, _jsonOptions);
+    }
+
+    private async Task<string> GenerateAsync(object body, CancellationToken ct)
+    {
+        var url = $"https://generativelanguage.googleapis.com/v1beta" +
+                  $"/models/{_model}:generateContent?key={_apiKey}";
 
         for (int attempt = 1; attempt <= 3; attempt++)
         {
