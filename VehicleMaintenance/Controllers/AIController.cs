@@ -7,6 +7,8 @@ using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.AI;
 using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Services.AI;
+using VehicleMaintenance.Services.Receipts;
+using VehicleMaintenance.Services.Storage;
 
 namespace VehicleMaintenance.Controllers;
 
@@ -16,13 +18,15 @@ namespace VehicleMaintenance.Controllers;
 public class AiController(
     IAiPredictionService aiPrediction,
     IGeminiService gemini,
+    IReceiptParsingService receiptParsing,
     AppDbContext context,
     IMapper mapper) : ControllerBase
 {
-    private readonly IAiPredictionService  _aiPrediction = aiPrediction;
-    private readonly IGeminiService        _gemini       = gemini;
-    private readonly AppDbContext          _context      = context;
-    private readonly IMapper               _mapper       = mapper;
+    private readonly IAiPredictionService  _aiPrediction   = aiPrediction;
+    private readonly IGeminiService        _gemini         = gemini;
+    private readonly IReceiptParsingService _receiptParsing = receiptParsing;
+    private readonly AppDbContext          _context        = context;
+    private readonly IMapper               _mapper         = mapper;
 
     // ═══════════════════════════════════════════
     // PING
@@ -133,6 +137,48 @@ public class AiController(
 
         var history = await _aiPrediction.GetDiagnosisHistoryAsync(vehicleId);
         return Ok(history);
+    }
+
+    // ═══════════════════════════════════════════
+    // FEATURE 4 — DOCUMENT PHOTO PARSING ("Smart Fill")
+    // ═══════════════════════════════════════════
+
+    private static readonly string[] _parseTargets = { "record", "fuel", "component", "expense", "vehicle" };
+
+    /// <summary>
+    /// Extracts form fields from a photographed document for the given target form.
+    /// Nothing is saved — the response pre-fills the form for the user to review and submit.
+    /// target ∈ record | fuel | component | expense | vehicle.
+    /// </summary>
+    [HttpPost("parse/{target}")]
+    public async Task<IActionResult> ParseDocument(string target, IFormFile image, CancellationToken ct)
+    {
+        var key = target.ToLowerInvariant();
+        if (!_parseTargets.Contains(key))
+            return BadRequest(new { error = $"Unknown parse target '{target}'." });
+
+        var error = ImageUploadValidator.Validate(image);
+        if (error is not null) return BadRequest(new { error });
+
+        using var ms = new MemoryStream();
+        await image.CopyToAsync(ms, ct);
+        var bytes = ms.ToArray();
+        var mime  = image.ContentType;
+
+        object? result = key switch
+        {
+            "record"    => await _receiptParsing.ParseReceiptAsync(bytes, mime, ct),
+            "fuel"      => await _receiptParsing.ParseFuelAsync(bytes, mime, ct),
+            "component" => await _receiptParsing.ParseComponentAsync(bytes, mime, ct),
+            "expense"   => await _receiptParsing.ParseExpenseAsync(bytes, mime, ct),
+            "vehicle"   => await _receiptParsing.ParseVehicleAsync(bytes, mime, ct),
+            _           => null,
+        };
+
+        if (result is null)
+            return StatusCode(500, new { error = "Could not read the document. Please enter the details manually." });
+
+        return Ok(result);
     }
 
     // ═══════════════════════════════════════════

@@ -8,6 +8,8 @@ using VehicleMaintenance.Repositories.Interfaces;
 using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.Receipts;
+using VehicleMaintenance.Services.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +36,8 @@ builder.Services.AddHttpClient<IGeminiService, GeminiService>(client =>
     client.Timeout = TimeSpan.FromSeconds(120);
 });
 builder.Services.AddScoped<IAiPredictionService, AiPredictionService>();
+builder.Services.AddScoped<IReceiptParsingService, ReceiptParsingService>();
+builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -84,6 +88,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseCors("DevPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
