@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
@@ -9,6 +10,36 @@ using VehicleMaintenance.Models.Enums;
 
 namespace VehicleMaintenance.Services.AI;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HOW THE BACKGROUND AI FIRING IS PROTECTED  (plain-language overview)
+//
+// Touching a component (editing it, or linking it to a maintenance record) fires
+// a fire-and-forget background task that does TWO separate AI jobs:
+//
+//   1. Component prediction  — "for THIS one part, how much life is left?"
+//                              One Gemini call per component. 10 parts = 10 calls,
+//                              on purpose (each part stores its own prediction).
+//   2. Vehicle suggestions   — "looking at the WHOLE car, what are the top jobs?"
+//                              Should run ONCE per car, no matter how many parts changed.
+//
+// There are THREE layers of protection so we don't spam Gemini:
+//
+//   A. In-flight claim (this file: _componentsInFlight / _vehiclesInFlight).
+//      An atomic ConcurrentDictionary "claim". When 10 triggers fire at once for the
+//      same car, only the first task wins the claim and runs; the others skip instantly.
+//      This closes the race where several tasks all check the timestamp guard before
+//      any of them has saved a result. In-process only (fine for a single server).
+//
+//   B. Component staleness (ComponentStaleness, 24h). A component re-predicts at most
+//      once per 24h via background triggers. Survives restarts (stored on AiGeneratedAt).
+//
+//   C. Suggestion cooldown (SuggestionCooldown, 10min). Vehicle suggestions regenerate
+//      at most once per 10min via background triggers. Based on the newest prediction row.
+//
+// The manual endpoints (POST /api/ai/predict/{id}, /suggest/{id}) pass forceRefresh=true
+// and bypass ALL of these — an explicit user request always runs.
+// ─────────────────────────────────────────────────────────────────────────────
+
 public class AiPredictionService(
     IServiceScopeFactory scopeFactory,
     IGeminiService gemini,
@@ -19,6 +50,21 @@ public class AiPredictionService(
     private readonly ILogger               _logger       = logger;
 
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    // Layer A — atomic in-flight claims. Keyed by id; a successful TryAdd means "I own
+    // this run", and concurrent triggers for the same id skip instead of duplicating work.
+    private static readonly ConcurrentDictionary<int, byte> _componentsInFlight = new();
+    private static readonly ConcurrentDictionary<int, byte> _vehiclesInFlight   = new();
+
+    // Tries to claim an id atomically. Returns a token (release it by disposing — use
+    // `using var`), or null if another run already holds the claim for that id.
+    private static ClaimToken? TryClaim(ConcurrentDictionary<int, byte> set, int id) =>
+        set.TryAdd(id, 0) ? new ClaimToken(set, id) : null;
+
+    private sealed class ClaimToken(ConcurrentDictionary<int, byte> set, int id) : IDisposable
+    {
+        public void Dispose() => set.TryRemove(id, out _);
+    }
 
     // ═══════════════════════════════════════════
     // BACKGROUND TRIGGER
@@ -55,6 +101,15 @@ public class AiPredictionService(
 
     public async Task GenerateComponentPredictionAsync(int componentId, bool forceRefresh = false)
     {
+        // Layer A — atomic claim. If another background run already owns this component,
+        // skip instantly instead of racing it. Auto-released when the method returns.
+        using var claim = forceRefresh ? null : TryClaim(_componentsInFlight, componentId);
+        if (!forceRefresh && claim is null)
+        {
+            _logger.LogInformation("Skipping component {Id} AI — another run is already in progress.", componentId);
+            return;
+        }
+
         using var scope   = _scopeFactory.CreateScope();
         var context       = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -156,6 +211,15 @@ public class AiPredictionService(
 
     public async Task GenerateVehicleSuggestionsAsync(int vehicleId, bool forceRefresh = false)
     {
+        // Layer A — atomic claim. When 10 components are saved at once, all 10 triggers
+        // call this for the same vehicle; only the first wins the claim, the rest skip.
+        using var claim = forceRefresh ? null : TryClaim(_vehiclesInFlight, vehicleId);
+        if (!forceRefresh && claim is null)
+        {
+            _logger.LogInformation("Skipping vehicle {Id} suggestions — another run is already in progress.", vehicleId);
+            return;
+        }
+
         using var scope = _scopeFactory.CreateScope();
         var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
