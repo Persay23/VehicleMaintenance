@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Vehicles;
 using VehicleMaintenance.Models.Entities;
+using VehicleMaintenance.Services.Export;
 using VehicleMaintenance.Services.Interfaces;
 
 namespace VehicleMaintenance.Controllers
@@ -9,13 +10,17 @@ namespace VehicleMaintenance.Controllers
     [ApiController]
     [Route("api/[controller]")]
 
-    public class VehicleController(IVehicleService iVehicleService, UserManager<User> userManager) : ControllerBase
+    public class VehicleController(
+        IVehicleService iVehicleService,
+        IVehicleExportService exportService,
+        UserManager<User> userManager) : ControllerBase
     {
         private readonly IVehicleService _iVehicleService = iVehicleService;
+        private readonly IVehicleExportService _exportService = exportService;
         private readonly UserManager<User> _userManager = userManager;
 
         [HttpGet]
-        public async Task<ActionResult<List<VehicleDto>>> GetVehicles()
+        public async Task<ActionResult<VehicleDto[]>> GetVehicles()
         {
             var userId = _userManager.GetUserId(User);
             if (userId is null) return Unauthorized();
@@ -49,6 +54,23 @@ namespace VehicleMaintenance.Controllers
         {
             var timeline = await _iVehicleService.GetTimelineAsync(vehicleId);
             return Ok(timeline);
+        }
+
+        /// <summary>Exports the vehicle's full service history as Markdown or PDF.</summary>
+        [HttpGet("{id:int}/export")]
+        public async Task<IActionResult> ExportVehicle(int id, [FromQuery] string format = "md", CancellationToken ct = default)
+        {
+            var fmt = format.ToLowerInvariant();
+            if (fmt is not ("md" or "pdf"))
+                return BadRequest(new { error = "format must be 'md' or 'pdf'." });
+
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Unauthorized();
+
+            var file = await _exportService.ExportAsync(id, userId, fmt, ct);
+            if (file is null) return NotFound();
+
+            return File(file.Content, file.ContentType, file.FileName);
         }
 
         [HttpPost]

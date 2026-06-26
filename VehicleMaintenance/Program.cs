@@ -7,9 +7,13 @@ using VehicleMaintenance.Repositories;
 using VehicleMaintenance.Repositories.Interfaces;
 using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.AI;
+using VehicleMaintenance.Services.Export;
 using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Services.Receipts;
 using VehicleMaintenance.Services.Storage;
+
+// QuestPDF Community licence — free for individuals / orgs under the revenue threshold (covers this project).
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +42,7 @@ builder.Services.AddHttpClient<IGeminiService, GeminiService>(client =>
 builder.Services.AddScoped<IAiPredictionService, AiPredictionService>();
 builder.Services.AddScoped<IReceiptParsingService, ReceiptParsingService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
+builder.Services.AddScoped<IVehicleExportService, VehicleExportService>();
 
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
