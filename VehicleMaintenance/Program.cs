@@ -1,10 +1,14 @@
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using VehicleMaintenance.Data;
+using VehicleMaintenance.Extensions;
 using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Repositories;
@@ -14,6 +18,7 @@ using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Auth;
 using VehicleMaintenance.Services.Export;
 using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.RateLimiting;
 using VehicleMaintenance.Services.Receipts;
 using VehicleMaintenance.Services.Security;
 using VehicleMaintenance.Services.Storage;
@@ -52,6 +57,11 @@ builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 builder.Services.AddScoped<IVehicleExportService, VehicleExportService>();
 builder.Services.AddScoped<IVehicleOwnershipService, VehicleOwnershipService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+// AI rate limiting: config-driven tiers (Regular/Premium/Max) + an in-memory daily quota.
+builder.Services.Configure<AiLimitsOptions>(builder.Configuration.GetSection("AiLimits"));
+builder.Services.AddSingleton<IUserTierService, UserTierService>();
+builder.Services.AddSingleton<IAiUsageLimiter, AiUsageLimiter>();
 
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -98,6 +108,42 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build());
+
+// Per-minute burst limiter. The "ai" policy is tier-aware (Max tier → no limit, for testing);
+// the "login" policy is a per-IP brute-force guard. Rejections return 429.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("ai", httpContext =>
+    {
+        var tier = httpContext.RequestServices
+            .GetRequiredService<IUserTierService>()
+            .Resolve(httpContext.User.FindFirstValue(ClaimTypes.Email));
+        var key = httpContext.User.GetUserId()
+            ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon";
+
+        return tier.PerMinute <= 0
+            ? RateLimitPartition.GetNoLimiter(key)
+            : RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = tier.PerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -146,6 +192,7 @@ app.UseStaticFiles();
 app.UseCors("DevPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())

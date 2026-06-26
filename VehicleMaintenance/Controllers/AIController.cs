@@ -1,12 +1,14 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.AI;
 using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Services.AI;
+using VehicleMaintenance.Services.RateLimiting;
 using VehicleMaintenance.Services.Receipts;
 using VehicleMaintenance.Services.Storage;
 
@@ -15,16 +17,21 @@ namespace VehicleMaintenance.Controllers;
 [ApiController]
 [Route("api/ai")]
 [Authorize]
+[EnableRateLimiting("ai")]
 public class AiController(
     IAiPredictionService aiPrediction,
     IGeminiService gemini,
     IReceiptParsingService receiptParsing,
+    IUserTierService tierService,
+    IAiUsageLimiter usageLimiter,
     AppDbContext context,
     IMapper mapper) : ControllerBase
 {
     private readonly IAiPredictionService  _aiPrediction   = aiPrediction;
     private readonly IGeminiService        _gemini         = gemini;
     private readonly IReceiptParsingService _receiptParsing = receiptParsing;
+    private readonly IUserTierService      _tierService    = tierService;
+    private readonly IAiUsageLimiter       _usageLimiter   = usageLimiter;
     private readonly AppDbContext          _context        = context;
     private readonly IMapper               _mapper         = mapper;
 
@@ -61,6 +68,9 @@ public class AiController(
         var accessError = await CheckComponentAccessAsync(componentId);
         if (accessError is not null) return (ActionResult)accessError;
 
+        var quotaError = EnforceAiQuota();
+        if (quotaError is not null) return (ActionResult)quotaError;
+
         try
         {
             // forceRefresh: true — user explicitly requested this, bypass staleness guard
@@ -88,6 +98,9 @@ public class AiController(
         var accessError = await CheckVehicleAccessAsync(vehicleId);
         if (accessError is not null) return accessError;
 
+        var quotaError = EnforceAiQuota();
+        if (quotaError is not null) return quotaError;
+
         try
         {
             // forceRefresh: true — user explicitly requested this, bypass cooldown guard
@@ -114,6 +127,9 @@ public class AiController(
     {
         var accessError = await CheckVehicleAccessAsync(vehicleId);
         if (accessError is not null) return (ActionResult)accessError;
+
+        var quotaError = EnforceAiQuota();
+        if (quotaError is not null) return (ActionResult)quotaError;
 
         try
         {
@@ -160,6 +176,9 @@ public class AiController(
         var error = ImageUploadValidator.Validate(image);
         if (error is not null) return BadRequest(new { error });
 
+        var quotaError = EnforceAiQuota();
+        if (quotaError is not null) return quotaError;
+
         using var ms = new MemoryStream();
         await image.CopyToAsync(ms, ct);
         var bytes = ms.ToArray();
@@ -182,11 +201,59 @@ public class AiController(
     }
 
     // ═══════════════════════════════════════════
+    // AI USAGE QUOTA (frontend banner + profile)
+    // ═══════════════════════════════════════════
+
+    /// <summary>Current user's AI tier and today's usage. Not rate-limited — the frontend polls it.</summary>
+    [HttpGet("quota")]
+    [DisableRateLimiting]
+    public IActionResult GetQuota()
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        var tier = _tierService.Resolve(GetCurrentUserEmail());
+        var status = _usageLimiter.Check(userId, tier.DailyLimit);
+
+        return Ok(new
+        {
+            tier = tier.Name,
+            used = status.Used,
+            limit = status.Unlimited ? (int?)null : status.Limit,
+            remaining = status.Unlimited ? (int?)null : status.Remaining,
+            unlimited = status.Unlimited,
+            resetsAt = status.ResetsAtUtc
+        });
+    }
+
+    // ═══════════════════════════════════════════
     // PRIVATE HELPERS
     // ═══════════════════════════════════════════
 
     private string? GetCurrentUserId() =>
         User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    private string? GetCurrentUserEmail() =>
+        User.FindFirst(ClaimTypes.Email)?.Value;
+
+    /// <summary>Consumes one daily AI-quota slot for the current user. Returns a 429 result if the cap is hit, else null.</summary>
+    private IActionResult? EnforceAiQuota()
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        var tier = _tierService.Resolve(GetCurrentUserEmail());
+        if (!_usageLimiter.TryConsume(userId, tier.DailyLimit, out var status))
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                error = $"Daily AI limit reached ({status.Limit} on the {tier.Name} plan). Resets {status.ResetsAtUtc:u}.",
+                tier = tier.Name,
+                used = status.Used,
+                limit = status.Limit,
+                resetsAt = status.ResetsAtUtc
+            });
+        return null;
+    }
 
     /// <summary>Returns null if the current user owns the vehicle; NotFound or Forbid otherwise.</summary>
     private async Task<IActionResult?> CheckVehicleAccessAsync(int vehicleId)

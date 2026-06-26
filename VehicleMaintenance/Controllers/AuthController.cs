@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using VehicleMaintenance.DTOs.Auth;
 using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Models.Entities;
@@ -31,6 +32,7 @@ namespace VehicleMaintenance.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting("login")]
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
