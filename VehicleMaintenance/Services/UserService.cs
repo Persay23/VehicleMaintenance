@@ -19,15 +19,15 @@ namespace VehicleMaintenance.Services
         // TODO: Add static general methods for creating, and retrieving users
         //// alot of repeted code in the controllers, better make a base controller for this? and alot of repetetive code in the services, better make a base service for this? 
         
-        public async Task<List<UserDto>> GetAllUsersAsync()
+        public async Task<UserDto[]> GetAllUsersAsync()
         {
-            var users = await _context.Users.ToListAsync();
-            return _mapper.Map<List<UserDto>>(users);
+            var users = await _context.Users.AsNoTracking().ToArrayAsync();
+            return _mapper.Map<UserDto[]>(users);
         }
 
         public async Task<UserDto?> GetUserByIdAsync(string id)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
             return user is null ? null : _mapper.Map<UserDto>(user);
         }
         public async Task<UserDto?> GetCurrentUserAsync(ClaimsPrincipal principal)

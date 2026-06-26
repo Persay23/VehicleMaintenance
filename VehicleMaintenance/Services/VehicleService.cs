@@ -13,12 +13,13 @@ namespace VehicleMaintenance.Services
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<List<VehicleDto>> GetAllVehiclesAsync(string userId)
+        public async Task<VehicleDto[]> GetAllVehiclesAsync(string userId)
         {
             var vehicles = await _context.Vehicles
+                .AsNoTracking()
                 .Where(v => v.UserId == userId)
-                .ToListAsync();
-            return _mapper.Map<List<VehicleDto>>(vehicles);
+                .ToArrayAsync();
+            return _mapper.Map<VehicleDto[]>(vehicles);
         }
 
         public async Task<VehicleDto?> GetVehicleByIdAsync(int id)
@@ -38,6 +39,7 @@ namespace VehicleMaintenance.Services
             int?      oldestMileage  = null;
 
             var oldestRecord = await _context.MaintenanceRecords
+                .AsNoTracking()
                 .Where(r => r.VehicleId == vehicle.VehicleId && r.Mileage.HasValue)
                 .OrderBy(r => r.ServiceDate)
                 .FirstOrDefaultAsync();
@@ -49,6 +51,7 @@ namespace VehicleMaintenance.Services
             }
 
             var oldestFuel = await _context.FuelEntries
+                .AsNoTracking()
                 .Where(f => f.VehicleId == vehicle.VehicleId)
                 .OrderBy(f => f.RefillDate)
                 .FirstOrDefaultAsync();
@@ -71,7 +74,7 @@ namespace VehicleMaintenance.Services
             }
         }
 
-        public async Task<List<MonthlyCostDto>> GetCostSummaryAsync(int vehicleId, DateTime? from, DateTime? to)
+        public async Task<MonthlyCostDto[]> GetCostSummaryAsync(int vehicleId, DateTime? from, DateTime? to)
         {
             var fromDate = from ?? DateTime.UtcNow.AddMonths(-6);
             var toDate = to ?? DateTime.UtcNow;
@@ -109,7 +112,7 @@ namespace VehicleMaintenance.Services
             })];
         }
 
-        public async Task<List<TimelineEventDto>> GetTimelineAsync(int vehicleId) // Add pagination
+        public async Task<TimelineEventDto[]> GetTimelineAsync(int vehicleId) // Add pagination
         {
             var maintenance = await _context.MaintenanceRecords
                 .Where(mr => mr.VehicleId == vehicleId)

@@ -13,22 +13,23 @@ namespace VehicleMaintenance.Services
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<List<FuelEntryDto>> GetAllFuelEntriesAsync()
+        public async Task<FuelEntryDto[]> GetAllFuelEntriesAsync()
         {
-            var fuelEntries = await _context.FuelEntries.ToListAsync();
-            return _mapper.Map<List<FuelEntryDto>>(fuelEntries);
+            var fuelEntries = await _context.FuelEntries.AsNoTracking().ToArrayAsync();
+            return _mapper.Map<FuelEntryDto[]>(fuelEntries);
         }
 
         public async Task<FuelEntryDto?> GetFuelEntryByIdAsync(int id)
         {
-            var fuelEntry = await _context.FuelEntries.FirstOrDefaultAsync(le => le.FuelEntryId == id);
+            var fuelEntry = await _context.FuelEntries.AsNoTracking().FirstOrDefaultAsync(le => le.FuelEntryId == id);
             return fuelEntry is null ? null : _mapper.Map<FuelEntryDto>(fuelEntry);
         }
 
-        public async Task<List<FuelEntryDto>> GetFuelEntryByVehicleAsync(// dive into
+        public async Task<FuelEntryDto[]> GetFuelEntryByVehicleAsync(// dive into
             int vehicleId, string? fuelType, DateTime? fromDate, DateTime? toDate)
         {
             var query = _context.FuelEntries
+                .AsNoTracking()
                 .Where(le => le.VehicleId == vehicleId);
 
             if (!string.IsNullOrEmpty(fuelType))
@@ -52,9 +53,9 @@ namespace VehicleMaintenance.Services
 
             var entries = await query
                 .OrderByDescending(le => le.RefillDate)
-                .ToListAsync();
+                .ToArrayAsync();
 
-            return _mapper.Map<List<FuelEntryDto>>(entries);
+            return _mapper.Map<FuelEntryDto[]>(entries);
         }
 
         public async Task<FuelEntryDto> CreateFuelEntryAsync(CreateFuelEntryDto dto)

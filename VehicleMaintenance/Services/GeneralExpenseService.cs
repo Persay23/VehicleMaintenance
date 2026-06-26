@@ -18,7 +18,7 @@ namespace VehicleMaintenance.Services
             return [.. expenses.Select(MapToDto)];
         }
 
-        public async Task<List<GeneralExpenseDto>> GetGeneralExpensesByUserIdAsync(string userId)
+        public async Task<GeneralExpenseDto[]> GetGeneralExpensesByUserIdAsync(string userId)
         {
             var expenses = await _repository.GetGeneralExpensesByUserIdAsync(userId);
             return [.. expenses.Select(MapToDto)];

@@ -5,7 +5,7 @@ namespace VehicleMaintenance.Services.Interfaces
 {
     public interface IUserService
     {
-        Task<List<UserDto>> GetAllUsersAsync();
+        Task<UserDto[]> GetAllUsersAsync();
         Task<UserDto?> GetUserByIdAsync(string id);
         Task<UserDto?> GetCurrentUserAsync(ClaimsPrincipal principal);
         Task<UserDto> CreateUserAsync(CreateUserDto dto);

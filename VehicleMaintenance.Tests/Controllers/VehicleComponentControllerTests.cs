@@ -24,7 +24,7 @@ namespace VehicleMaintenance.Tests.Controllers
         [Fact]
         public async Task GetVehicleComponents_ReturnsOkWithList()
         {
-            var fakeComponents = new List<VehicleComponentDto>
+            var fakeComponents = new VehicleComponentDto[]
             {
                 new() { VehicleComponentId = 1, ComponentType = "Brakes" },
                 new() { VehicleComponentId = 2, ComponentType = "Engine" }
@@ -37,7 +37,7 @@ namespace VehicleMaintenance.Tests.Controllers
             var result = await _controller.GetVehicleComponents();
 
             var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-            var returned = okResult.Value.Should().BeAssignableTo<List<VehicleComponentDto>>().Subject;
+            var returned = okResult.Value.Should().BeAssignableTo<VehicleComponentDto[]>().Subject;
             returned.Should().HaveCount(2);
         }
 

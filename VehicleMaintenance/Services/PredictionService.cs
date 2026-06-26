@@ -12,33 +12,36 @@ namespace VehicleMaintenance.Services
         private readonly AppDbContext _context = context;
         private readonly IMapper _mapper = mapper;
 
-        public async Task<List<PredictionDto>> GetAllPredictionsAsync()
+        public async Task<PredictionDto[]> GetAllPredictionsAsync()
         {
             var predictions = await _context.Predictions
+                .AsNoTracking()
                 .Include(p => p.VehicleComponent)
-                .ToListAsync();
-            return _mapper.Map<List<PredictionDto>>(predictions);
+                .ToArrayAsync();
+            return _mapper.Map<PredictionDto[]>(predictions);
         }
 
         public async Task<PredictionDto?> GetPredictionByIdAsync(int id)
         {
             var prediction = await _context.Predictions
+                .AsNoTracking()
                 .Include(p => p.VehicleComponent)
                 .FirstOrDefaultAsync(p => p.PredictionId == id);
 
             return prediction is null ? null : _mapper.Map<PredictionDto>(prediction);
         }
 
-        public async Task<List<PredictionDto>> GetPredictionsByVehicleAsync(int vehicleId)
+        public async Task<PredictionDto[]> GetPredictionsByVehicleAsync(int vehicleId)
         {
             var predictions = await _context.Predictions
+                .AsNoTracking()
                 .Include(p => p.VehicleComponent)
                 .Where(p => p.VehicleId == vehicleId)
                 .OrderBy(p => p.Urgency)
                 .ThenBy(p => p.SuggestedByDate)
-                .ToListAsync();
+                .ToArrayAsync();
 
-            return _mapper.Map<List<PredictionDto>>(predictions);
+            return _mapper.Map<PredictionDto[]>(predictions);
         }
 
         public async Task<PredictionDto?> UpdatePredictionByIdAsync(int id, UpdatePredictionDto dto)

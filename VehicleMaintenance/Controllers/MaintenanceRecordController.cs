@@ -12,7 +12,7 @@ namespace VehicleMaintenance.Controllers
         private readonly IMaintenanceRecordService _iMaintenanceRecordService = iMaintenanceRecordService;
 
         [HttpGet]
-        public async Task<ActionResult<List<MaintenanceRecordDto>>> GetMaintenanceRecords()
+        public async Task<ActionResult<MaintenanceRecordDto[]>> GetMaintenanceRecords()
         {
             var maintenanceRecords = await _iMaintenanceRecordService.GetAllMaintenanceRecordsAsync();
             return Ok(maintenanceRecords);

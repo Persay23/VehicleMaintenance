@@ -18,7 +18,7 @@ namespace VehicleMaintenance.Controllers
         /// <param name="vehicleId">hhhhh</param>
         /// <returns>hhh</returns>
         [HttpGet]
-        public async Task<ActionResult<List<VehicleComponentDto>>> GetVehicleComponents()
+        public async Task<ActionResult<VehicleComponentDto[]>> GetVehicleComponents()
         {
             var vehicleComponents = await _iVehicleComponentService.GetAllVehicleComponentsAsync();
             return Ok(vehicleComponents);
@@ -32,14 +32,14 @@ namespace VehicleMaintenance.Controllers
         }
 
         [HttpGet("vehicle/{vehicleId}")]
-        public async Task<ActionResult<List<VehicleComponentDto>>> GetByVehicle(int vehicleId)
+        public async Task<ActionResult<VehicleComponentDto[]>> GetByVehicle(int vehicleId)
         {
             var components = await _iVehicleComponentService.GetVehicleComponentByVehicleAsync(vehicleId);
             return Ok(components);
         }
 
         [HttpGet("{id:int}/history")]
-        public async Task<ActionResult<List<ComponentHistoryDto>>> GetComponentHistory(int id)
+        public async Task<ActionResult<ComponentHistoryDto[]>> GetComponentHistory(int id)
         {
             var history = await _iVehicleComponentService.GetComponentHistoryAsync(id);
             return Ok(history);

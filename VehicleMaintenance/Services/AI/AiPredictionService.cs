@@ -138,6 +138,7 @@ public class AiPredictionService(
         }
 
         var history = await context.MaintenanceRecordComponents
+            .AsNoTracking()
             .Where(mrc => mrc.ComponentId == componentId)
             .Include(mrc => mrc.MaintenanceRecord)
             .OrderByDescending(mrc => mrc.MaintenanceRecord.ServiceDate)
@@ -255,6 +256,7 @@ public class AiPredictionService(
         }
 
         var recentRecords = await context.MaintenanceRecords
+            .AsNoTracking()
             .Where(r => r.VehicleId == vehicleId)
             .OrderByDescending(r => r.ServiceDate)
             .Take(3)
@@ -360,6 +362,7 @@ public class AiPredictionService(
         }
 
         var recentRecords = await context.MaintenanceRecords
+            .AsNoTracking()
             .Where(r => r.VehicleId == vehicleId)
             .OrderByDescending(r => r.ServiceDate)
             .Take(2)
@@ -398,15 +401,16 @@ public class AiPredictionService(
         return MapToDto(entity, causes, actions, related);
     }
 
-    public async Task<List<AiDiagnosisDto>> GetDiagnosisHistoryAsync(int vehicleId)
+    public async Task<AiDiagnosisDto[]> GetDiagnosisHistoryAsync(int vehicleId)
     {
         using var scope = _scopeFactory.CreateScope();
         var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var diagnoses = await context.AiDiagnoses
+            .AsNoTracking()
             .Where(d => d.VehicleId == vehicleId)
             .OrderBy(d => d.CreatedAt)
-            .ToListAsync();
+            .ToArrayAsync();
 
         return diagnoses.Select(d => MapToDto(
             d,
@@ -415,7 +419,7 @@ public class AiPredictionService(
             d.RelatedComponentNames is not null
                 ? JsonSerializer.Deserialize<List<string>>(d.RelatedComponentNames, _jsonOptions) ?? []
                 : []
-        )).ToList();
+        )).ToArray();
     }
 
     private static AiDiagnosisDto MapToDto(

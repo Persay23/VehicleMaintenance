@@ -11,7 +11,7 @@ namespace VehicleMaintenance.Controllers
         private readonly IMaintenanceRecordComponentService _iMaintenanceRecordComponentService = iMaintenanceRecordComponentService;
 
         [HttpGet]
-        public async Task<ActionResult<List<MaintenanceRecordComponentDto>>> GetMaintenanceRecordComponents()
+        public async Task<ActionResult<MaintenanceRecordComponentDto[]>> GetMaintenanceRecordComponents()
         {
             var maintenanceRecordComponents = await _iMaintenanceRecordComponentService.GetAllMaintenanceRecordComponentsAsync();
             return Ok(maintenanceRecordComponents);

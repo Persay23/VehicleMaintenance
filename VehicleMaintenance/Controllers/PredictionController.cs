@@ -11,7 +11,7 @@ namespace VehicleMaintenance.Controllers
         private readonly IPredictionService _iPredictionService = iPredictionService;
 
         [HttpGet]
-        public async Task<ActionResult<List<PredictionDto>>> GetPredictions()
+        public async Task<ActionResult<PredictionDto[]>> GetPredictions()
         {
             var predictions = await _iPredictionService.GetAllPredictionsAsync();
             return Ok(predictions);
@@ -30,7 +30,7 @@ namespace VehicleMaintenance.Controllers
         }
 
         [HttpGet("vehicle/{vehicleId:int}")]
-        public async Task<ActionResult<List<PredictionDto>>> GetPredictionsByVehicle(int vehicleId)
+        public async Task<ActionResult<PredictionDto[]>> GetPredictionsByVehicle(int vehicleId)
         {
             var predictions = await _iPredictionService.GetPredictionsByVehicleAsync(vehicleId);
             return Ok(predictions);

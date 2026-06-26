@@ -17,11 +17,12 @@ namespace VehicleMaintenance.Repositories
                 .ToArrayAsync();
         }
 
-        public async Task<List<GeneralExpense>> GetGeneralExpensesByUserIdAsync(string userId)
+        public async Task<GeneralExpense[]> GetGeneralExpensesByUserIdAsync(string userId)
         {
             return await _context.GeneralExpenses
                 .Where(e => e.Vehicle.UserId == userId)
-                .ToListAsync();
+                .AsNoTracking()
+                .ToArrayAsync();
         }
 
         public async Task<GeneralExpense?> GetGeneralExpenseByIdAsync(int id)

@@ -12,7 +12,7 @@ namespace VehicleMaintenance.Controllers
         private readonly IFuelEntryService _iFuelEntryService = iFuelEntryService;
 
         [HttpGet]
-        public async Task<ActionResult<List<FuelEntryDto>>> GetFuelEntries()
+        public async Task<ActionResult<FuelEntryDto[]>> GetFuelEntries()
         {
             var FuelEntries = await _iFuelEntryService.GetAllFuelEntriesAsync();
             return Ok(FuelEntries);

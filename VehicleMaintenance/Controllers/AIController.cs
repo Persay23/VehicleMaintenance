@@ -130,7 +130,7 @@ public class AiController(
     }
 
     [HttpGet("diagnose/{vehicleId:int}")]
-    public async Task<ActionResult<List<AiDiagnosisDto>>> GetDiagnosisHistory(int vehicleId)
+    public async Task<ActionResult<AiDiagnosisDto[]>> GetDiagnosisHistory(int vehicleId)
     {
         var accessError = await CheckVehicleAccessAsync(vehicleId);
         if (accessError is not null) return (ActionResult)accessError;

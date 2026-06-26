@@ -13,7 +13,7 @@ namespace VehicleMaintenance.Controllers
         private readonly IUserService _iUserService = iUserService;
 
         [HttpGet]
-        public async Task<ActionResult<List<UserDto>>> GetUsers()
+        public async Task<ActionResult<UserDto[]>> GetUsers()
         {
             var users = await _iUserService.GetAllUsersAsync();
             return Ok(users);

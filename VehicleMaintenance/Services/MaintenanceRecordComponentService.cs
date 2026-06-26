@@ -20,17 +20,19 @@ namespace VehicleMaintenance.Services
         private readonly IAiPredictionService _aiPrediction = aiPrediction;
         private readonly ILogger<MaintenanceRecordComponentService> _logger = logger;
 
-        public async Task<List<MaintenanceRecordComponentDto>> GetAllMaintenanceRecordComponentsAsync()
+        public async Task<MaintenanceRecordComponentDto[]> GetAllMaintenanceRecordComponentsAsync()
         {
             var maintenanceRecordComponents = await _context.MaintenanceRecordComponents
+                .AsNoTracking()
                 .Include(mrc => mrc.Component)
-                .ToListAsync();
-            return _mapper.Map<List<MaintenanceRecordComponentDto>>(maintenanceRecordComponents);
+                .ToArrayAsync();
+            return _mapper.Map<MaintenanceRecordComponentDto[]>(maintenanceRecordComponents);
         }
 
         public async Task<MaintenanceRecordComponentDto?> GetMaintenanceRecordComponentByIdAsync(int id)
         {
             var maintenanceRecordComponent = await _context.MaintenanceRecordComponents
+                .AsNoTracking()
                 .Include(mrc => mrc.Component)
                 .FirstOrDefaultAsync(mrc => mrc.MaintenanceRecordComponentId == id);
             return maintenanceRecordComponent is null ? null : _mapper.Map<MaintenanceRecordComponentDto>(maintenanceRecordComponent);

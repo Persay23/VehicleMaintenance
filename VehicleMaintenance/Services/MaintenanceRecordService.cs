@@ -41,6 +41,7 @@ namespace VehicleMaintenance.Services
             if (vehicle != null)
             {
                 var oldest = await _context.MaintenanceRecords
+                    .AsNoTracking()
                     .Where(r => r.VehicleId == dto.VehicleId && r.Mileage.HasValue)
                     .OrderBy(r => r.ServiceDate)
                     .FirstOrDefaultAsync();
@@ -76,18 +77,20 @@ namespace VehicleMaintenance.Services
             return _mapper.Map<MaintenanceRecordDto>(maintenancerecord);
         }
 
-        public async Task<List<MaintenanceRecordDto>> GetAllMaintenanceRecordsAsync()
+        public async Task<MaintenanceRecordDto[]> GetAllMaintenanceRecordsAsync()
         {
             var maintenanceRecords = await _context.MaintenanceRecords
+                .AsNoTracking()
                 .Include(mr => mr.MaintenanceRecordComponents)
                     .ThenInclude(mrc => mrc.Component)
-                .ToListAsync();
-            return _mapper.Map<List<MaintenanceRecordDto>>(maintenanceRecords);
+                .ToArrayAsync();
+            return _mapper.Map<MaintenanceRecordDto[]>(maintenanceRecords);
         }
 
         public async Task<MaintenanceRecordDto?> GetMaintenanceRecordByIdAsync(int id)
         {
             var maintenanceRecord = await _context.MaintenanceRecords
+                .AsNoTracking()
                 .Include(mr => mr.MaintenanceRecordComponents)
                     .ThenInclude(mrc => mrc.Component)
                 .FirstOrDefaultAsync(mr => mr.MaintenanceRecordId == id);
@@ -144,9 +147,10 @@ namespace VehicleMaintenance.Services
             return true;
         }
 
-        public async Task<List<MaintenanceRecordDto>> GetMaintenanceRecordByVehicleAsync(int vehicleId, DateTime? fromDate, DateTime? toDate, string? serviceType)
+        public async Task<MaintenanceRecordDto[]> GetMaintenanceRecordByVehicleAsync(int vehicleId, DateTime? fromDate, DateTime? toDate, string? serviceType)
         {
             var query = _context.MaintenanceRecords
+                .AsNoTracking()
                 .Where(mr => mr.VehicleId == vehicleId);
 
             if (fromDate.HasValue)
@@ -167,9 +171,9 @@ namespace VehicleMaintenance.Services
                 .Include(mr => mr.MaintenanceRecordComponents)
                     .ThenInclude(mrc => mrc.Component)
                 .OrderByDescending(mr => mr.ServiceDate)
-                .ToListAsync();
+                .ToArrayAsync();
 
-            return _mapper.Map<List<MaintenanceRecordDto>>(records);
+            return _mapper.Map<MaintenanceRecordDto[]>(records);
         }
     }
 }

@@ -22,46 +22,51 @@ namespace VehicleMaintenance.Services
         private readonly IMapper _mapper = mapper;
         private readonly IAiPredictionService _aiPrediction = aiPrediction;
         private readonly ILogger<VehicleComponentService> _logger = logger;
-        public async Task<List<VehicleComponentDto>> GetVehicleComponentByVehicleAsync(int vehicleId)
+        public async Task<VehicleComponentDto[]> GetVehicleComponentByVehicleAsync(int vehicleId)
         {
             var components = await _context.VehicleComponents
+                .AsNoTracking()
                 .Where(vc => vc.VehicleId == vehicleId)
                 .Include(vc => vc.Vehicle)
-                .ToListAsync();
-            return _mapper.Map<List<VehicleComponentDto>>(components);
+                .ToArrayAsync();
+            return _mapper.Map<VehicleComponentDto[]>(components);
         }
 
-        public async Task<List<VehicleComponentDto>> GetAllVehicleComponentsAsync()
+        public async Task<VehicleComponentDto[]> GetAllVehicleComponentsAsync()
         {
             var vehicleComponents = await _context.VehicleComponents
+                .AsNoTracking()
                 .Include(vc => vc.Vehicle)
-                .ToListAsync();
-            return _mapper.Map<List<VehicleComponentDto>>(vehicleComponents);
+                .ToArrayAsync();
+            return _mapper.Map<VehicleComponentDto[]>(vehicleComponents);
         }
 
         public async Task<VehicleComponentDto?> GetVehicleComponentByIdAsync(int id)
         {
             var vehicleComponent = await _context.VehicleComponents
+                .AsNoTracking()
                 .Include(vc => vc.Vehicle)
                 .FirstOrDefaultAsync(vc => vc.VehicleComponentId == id);
             return vehicleComponent is null ? null : _mapper.Map<VehicleComponentDto>(vehicleComponent);
         }
-        public async Task<List<ComponentHistoryDto>> GetComponentHistoryAsync(int componentId)
+        public async Task<ComponentHistoryDto[]> GetComponentHistoryAsync(int componentId)
         {
             var items = await _context.MaintenanceRecordComponents
+                .AsNoTracking()
                 .Where(mrc => mrc.ComponentId == componentId)
                 .Include(mrc => mrc.MaintenanceRecord)
                 .OrderByDescending(mrc => mrc.MaintenanceRecord.ServiceDate)
-                .ToListAsync();
+                .ToArrayAsync();
 
-            return _mapper.Map<List<ComponentHistoryDto>>(items);
+            return _mapper.Map<ComponentHistoryDto[]>(items);
         }
-        public async Task<List<ComponentHealthDto>> GetComponentHealthAsync(int vehicleId)
+        public async Task<ComponentHealthDto[]> GetComponentHealthAsync(int vehicleId)
         {
             var components = await _context.VehicleComponents
+                .AsNoTracking()
                 .Where(c => c.VehicleId == vehicleId)
                 .Include(c => c.Vehicle)
-                .ToListAsync();
+                .ToArrayAsync();
 
             return [.. components.Select(c => CalculateHealth(c, c.Vehicle.Mileage))];
         }

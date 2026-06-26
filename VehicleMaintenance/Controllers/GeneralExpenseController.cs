@@ -18,7 +18,7 @@ namespace VehicleMaintenance.Controllers
         }
 
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<List<GeneralExpenseDto>>> GetGeneralExpensesByUser(string userId)
+        public async Task<ActionResult<GeneralExpenseDto[]>> GetGeneralExpensesByUser(string userId)
         {
             var expenses = await _service.GetGeneralExpensesByUserIdAsync(userId);
             return Ok(expenses);

@@ -8,5 +8,5 @@ public interface IAiPredictionService
     Task GenerateComponentPredictionAsync(int componentId, bool forceRefresh = false);
     Task GenerateVehicleSuggestionsAsync(int vehicleId, bool forceRefresh = false);
     Task<AiDiagnosisDto?> DiagnoseAsync(int vehicleId, string symptom);
-    Task<List<AiDiagnosisDto>> GetDiagnosisHistoryAsync(int vehicleId);
+    Task<AiDiagnosisDto[]> GetDiagnosisHistoryAsync(int vehicleId);
 }
