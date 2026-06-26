@@ -1,5 +1,9 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Models.Entities;
@@ -7,6 +11,7 @@ using VehicleMaintenance.Repositories;
 using VehicleMaintenance.Repositories.Interfaces;
 using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.AI;
+using VehicleMaintenance.Services.Auth;
 using VehicleMaintenance.Services.Export;
 using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Services.Receipts;
@@ -46,6 +51,7 @@ builder.Services.AddScoped<IReceiptParsingService, ReceiptParsingService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 builder.Services.AddScoped<IVehicleExportService, VehicleExportService>();
 builder.Services.AddScoped<IVehicleOwnershipService, VehicleOwnershipService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -56,17 +62,33 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = false;
 })
 .AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders()
-.AddDefaultUI();
+.AddDefaultTokenProviders();
 
-builder.Services.ConfigureApplicationCookie(options =>
+// JWT bearer is the default scheme (overrides the cookie scheme AddIdentity registers).
+// The SPA sends the token in the Authorization header, so this works cross-origin and
+// returns a clean 401 (no cookie redirect) on unauthenticated requests.
+builder.Services.AddAuthentication(options =>
 {
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.HttpOnly = true;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]
+                ?? throw new InvalidOperationException("Jwt:Key is not configured."))),
+    };
 });
 
-builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 
 // Require an authenticated user on every endpoint by default. Public entry points
@@ -77,7 +99,23 @@ builder.Services.AddAuthorization(options =>
         .RequireAuthenticatedUser()
         .Build());
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // Adds an "Authorize" button so you can paste a JWT and call protected endpoints from Swagger.
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Paste the token from POST /api/auth/login (no 'Bearer ' prefix)."
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+    });
+});
 
 builder.Services.AddCors(options =>
 {
@@ -108,7 +146,6 @@ app.UseStaticFiles();
 app.UseCors("DevPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapRazorPages();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
