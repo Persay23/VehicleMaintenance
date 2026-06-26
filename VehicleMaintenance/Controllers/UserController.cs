@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Users;
+using VehicleMaintenance.Extensions;
 using VehicleMaintenance.Services.Interfaces;
 
 
@@ -12,25 +14,6 @@ namespace VehicleMaintenance.Controllers
     {
         private readonly IUserService _iUserService = iUserService;
 
-        [HttpGet]
-        public async Task<ActionResult<UserDto[]>> GetUsers()
-        {
-            var users = await _iUserService.GetAllUsersAsync();
-            return Ok(users);
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UserDto>> GetUserById(string id)
-        {
-            var user = await _iUserService.GetUserByIdAsync(id);
-            if (user is null)
-            {
-                return NotFound();
-            }
-
-            return Ok(user);
-        }
-
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
@@ -39,16 +22,19 @@ namespace VehicleMaintenance.Controllers
             return Ok(userDto);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto createUserDto)
         {
             var createdUser = await _iUserService.CreateUserAsync(createUserDto);
-            return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, createdUser);
+            return Ok(createdUser);
         }
 
         [HttpPost("{id}/change-password")]
         public async Task<IActionResult> ChangePassword(string id, ChangePasswordDto dto)
         {
+            if (id != User.GetUserId()) return Forbid();
+
             var success = await _iUserService.ChangePasswordAsync(id, dto);
             if (!success) return BadRequest(new { message = "Password change failed." });
             return Ok(new { message = "Password changed successfully." });
@@ -57,6 +43,8 @@ namespace VehicleMaintenance.Controllers
         [HttpPatch("{id}")]
         public async Task<ActionResult<UserDto>> UpdateUser(string id, UpdateUserDto dto)
         {
+            if (id != User.GetUserId()) return Forbid();
+
             var updated = await _iUserService.UpdateUserByIdAsync(id, dto);
             if (updated is null)
             {
@@ -69,6 +57,8 @@ namespace VehicleMaintenance.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
+            if (id != User.GetUserId()) return Forbid();
+
             var deleted = await _iUserService.DeleteUserByIdAsync(id);
             if (!deleted) return NotFound();
             return NoContent();

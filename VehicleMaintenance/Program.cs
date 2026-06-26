@@ -10,7 +10,9 @@ using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Export;
 using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Services.Receipts;
+using VehicleMaintenance.Services.Security;
 using VehicleMaintenance.Services.Storage;
+using Microsoft.AspNetCore.Authorization;
 
 // QuestPDF Community licence — free for individuals / orgs under the revenue threshold (covers this project).
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
@@ -43,6 +45,7 @@ builder.Services.AddScoped<IAiPredictionService, AiPredictionService>();
 builder.Services.AddScoped<IReceiptParsingService, ReceiptParsingService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 builder.Services.AddScoped<IVehicleExportService, VehicleExportService>();
+builder.Services.AddScoped<IVehicleOwnershipService, VehicleOwnershipService>();
 
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -65,6 +68,14 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
+
+// Require an authenticated user on every endpoint by default. Public entry points
+// (login / register) opt out with [AllowAnonymous]. Closes the previous hole where most
+// controllers were reachable anonymously.
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Vehicles;
+using VehicleMaintenance.Extensions;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Services.Export;
 using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.Security;
 
 namespace VehicleMaintenance.Controllers
 {
@@ -13,10 +15,12 @@ namespace VehicleMaintenance.Controllers
     public class VehicleController(
         IVehicleService iVehicleService,
         IVehicleExportService exportService,
+        IVehicleOwnershipService ownership,
         UserManager<User> userManager) : ControllerBase
     {
         private readonly IVehicleService _iVehicleService = iVehicleService;
         private readonly IVehicleExportService _exportService = exportService;
+        private readonly IVehicleOwnershipService _ownership = ownership;
         private readonly UserManager<User> _userManager = userManager;
 
         [HttpGet]
@@ -32,6 +36,10 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<VehicleDto>> GetVehicleById(int id)
         {
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, id)) return NotFound();
+
             var vehicle = await _iVehicleService.GetVehicleByIdAsync(id);
             if (vehicle is null)
             {
@@ -44,6 +52,10 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("{vehicleId}/summary/costs")]
         public async Task<IActionResult> GetCostSummary(int vehicleId, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, vehicleId)) return NotFound();
+
             var summary = await _iVehicleService.GetCostSummaryAsync(vehicleId, from, to);
             if (summary is null) return NotFound();
             return Ok(summary);
@@ -52,6 +64,10 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("{vehicleId}/summary/timeline")]
         public async Task<IActionResult> GetTimeline(int vehicleId)
         {
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, vehicleId)) return NotFound();
+
             var timeline = await _iVehicleService.GetTimelineAsync(vehicleId);
             return Ok(timeline);
         }
@@ -86,6 +102,10 @@ namespace VehicleMaintenance.Controllers
         [HttpPatch("{id:int}")]
         public async Task<ActionResult<VehicleDto>> UpdateVehicle(int id, UpdateVehicleDto dto)
         {
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, id)) return NotFound();
+
             var updated = await _iVehicleService.UpdateVehicleByIdAsync(id, dto);
             if (updated is null)
             {
@@ -98,6 +118,10 @@ namespace VehicleMaintenance.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteVehicle(int id)
         {
+            var userId = _userManager.GetUserId(User);
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, id)) return NotFound();
+
             var deleted = await _iVehicleService.DeleteVehicleByIdAsync(id);
             if (!deleted)
             {

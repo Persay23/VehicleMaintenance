@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Auth;
 using VehicleMaintenance.DTOs.Users;
@@ -14,6 +15,7 @@ namespace VehicleMaintenance.Controllers
         private readonly SignInManager<User> _signInManager = signInManager;
         private readonly IUserService _iUserService = iUserService;
 
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register(CreateUserDto dto)
         {
@@ -21,6 +23,7 @@ namespace VehicleMaintenance.Controllers
             return Ok(user);
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {

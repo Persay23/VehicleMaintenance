@@ -1,44 +1,42 @@
-﻿// Controllers/VehicleComponentControllerTests.cs
+// Controllers/VehicleComponentControllerTests.cs
+using System.Security.Claims;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using VehicleMaintenance.Controllers;
 using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.Security;
 
 namespace VehicleMaintenance.Tests.Controllers
 {
     public class VehicleComponentControllerTests
     {
+        private const string TestUserId = "user-1";
         private readonly Mock<IVehicleComponentService> _serviceMock;
+        private readonly Mock<IVehicleOwnershipService> _ownershipMock;
         private readonly VehicleComponentController _controller;
 
         public VehicleComponentControllerTests()
         {
             _serviceMock = new Mock<IVehicleComponentService>();
+            _ownershipMock = new Mock<IVehicleOwnershipService>();
 
-            // This will work once you fix the controller to inject IVehicleComponentService
-            _controller = new VehicleComponentController(_serviceMock.Object);
-        }
+            // Default: the test user owns whatever component is requested, so actions reach the service.
+            _ownershipMock
+                .Setup(o => o.OwnsComponentAsync(It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync(true);
 
-        [Fact]
-        public async Task GetVehicleComponents_ReturnsOkWithList()
-        {
-            var fakeComponents = new VehicleComponentDto[]
+            _controller = new VehicleComponentController(_serviceMock.Object, _ownershipMock.Object);
+
+            // Give the controller an authenticated user so User.GetUserId() resolves.
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(
+                new[] { new Claim(ClaimTypes.NameIdentifier, TestUserId) }, "TestAuth"));
+            _controller.ControllerContext = new ControllerContext
             {
-                new() { VehicleComponentId = 1, ComponentType = "Brakes" },
-                new() { VehicleComponentId = 2, ComponentType = "Engine" }
+                HttpContext = new DefaultHttpContext { User = principal }
             };
-
-            _serviceMock
-                .Setup(s => s.GetAllVehicleComponentsAsync())
-                .ReturnsAsync(fakeComponents);
-
-            var result = await _controller.GetVehicleComponents();
-
-            var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-            var returned = okResult.Value.Should().BeAssignableTo<VehicleComponentDto[]>().Subject;
-            returned.Should().HaveCount(2);
         }
 
         [Fact]
@@ -67,6 +65,19 @@ namespace VehicleMaintenance.Tests.Controllers
             var result = await _controller.GetVehicleComponentById(999);
 
             result.Result.Should().BeOfType<NotFoundResult>();
+        }
+
+        [Fact]
+        public async Task GetVehicleComponentById_WhenNotOwned_ReturnsNotFound()
+        {
+            _ownershipMock
+                .Setup(o => o.OwnsComponentAsync(TestUserId, 5))
+                .ReturnsAsync(false);
+
+            var result = await _controller.GetVehicleComponentById(5);
+
+            result.Result.Should().BeOfType<NotFoundResult>();
+            _serviceMock.Verify(s => s.GetVehicleComponentByIdAsync(It.IsAny<int>()), Times.Never);
         }
 
         [Fact]

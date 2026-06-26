@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.DTOs.VehicleComponents;
+using VehicleMaintenance.Extensions;
+using VehicleMaintenance.Services.Security;
 
 namespace VehicleMaintenance.Controllers
 {
@@ -8,25 +10,20 @@ namespace VehicleMaintenance.Controllers
     [ApiController]
     [Route("api/[controller]")]
 
-    public class VehicleComponentController(IVehicleComponentService iVehicleComponentService) : ControllerBase
+    public class VehicleComponentController(
+        IVehicleComponentService iVehicleComponentService,
+        IVehicleOwnershipService ownership) : ControllerBase
     {
         private readonly IVehicleComponentService _iVehicleComponentService = iVehicleComponentService;
-
-        /// <summary>
-        /// Get all vehicles components
-        /// </summary>
-        /// <param name="vehicleId">hhhhh</param>
-        /// <returns>hhh</returns>
-        [HttpGet]
-        public async Task<ActionResult<VehicleComponentDto[]>> GetVehicleComponents()
-        {
-            var vehicleComponents = await _iVehicleComponentService.GetAllVehicleComponentsAsync();
-            return Ok(vehicleComponents);
-        }
+        private readonly IVehicleOwnershipService _ownership = ownership;
 
         [HttpGet("vehicle/{vehicleId}/health")]
         public async Task<IActionResult> GetComponentHealth(int vehicleId)
         {
+            var userId = User.GetUserId();
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, vehicleId)) return NotFound();
+
             var health = await _iVehicleComponentService.GetComponentHealthAsync(vehicleId);
             return Ok(health);
         }
@@ -34,6 +31,10 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("vehicle/{vehicleId}")]
         public async Task<ActionResult<VehicleComponentDto[]>> GetByVehicle(int vehicleId)
         {
+            var userId = User.GetUserId();
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, vehicleId)) return NotFound();
+
             var components = await _iVehicleComponentService.GetVehicleComponentByVehicleAsync(vehicleId);
             return Ok(components);
         }
@@ -41,6 +42,10 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("{id:int}/history")]
         public async Task<ActionResult<ComponentHistoryDto[]>> GetComponentHistory(int id)
         {
+            var userId = User.GetUserId();
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsComponentAsync(userId, id)) return NotFound();
+
             var history = await _iVehicleComponentService.GetComponentHistoryAsync(id);
             return Ok(history);
         }
@@ -48,6 +53,10 @@ namespace VehicleMaintenance.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<VehicleComponentDto>> GetVehicleComponentById(int id)
         {
+            var userId = User.GetUserId();
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsComponentAsync(userId, id)) return NotFound();
+
             var component = await _iVehicleComponentService.GetVehicleComponentByIdAsync(id);
             if (component is null)
             {
@@ -57,14 +66,13 @@ namespace VehicleMaintenance.Controllers
             return Ok(component);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="createVehicleComponentDto"></param>
-        /// <returns></returns>
         [HttpPost]
         public async Task<ActionResult> CreateVehicleComponent(CreateVehicleComponentDto createVehicleComponentDto)
         {
+            var userId = User.GetUserId();
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsVehicleAsync(userId, createVehicleComponentDto.VehicleId)) return Forbid();
+
             var createdVehicleComponent = await _iVehicleComponentService.CreateVehicleComponentAsync(createVehicleComponentDto);
             return Ok(createdVehicleComponent);
         }
@@ -72,6 +80,10 @@ namespace VehicleMaintenance.Controllers
         [HttpPatch("{id:int}")]
         public async Task<ActionResult<VehicleComponentDto>> UpdateVehicleComponent(int id, UpdateVehicleComponentDto dto)
         {
+            var userId = User.GetUserId();
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsComponentAsync(userId, id)) return NotFound();
+
             var updated = await _iVehicleComponentService.UpdateVehicleComponentByIdAsync(id, dto);
             if (updated is null)
             {
@@ -84,6 +96,10 @@ namespace VehicleMaintenance.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteVehicleComponent(int id)
         {
+            var userId = User.GetUserId();
+            if (userId is null) return Unauthorized();
+            if (!await _ownership.OwnsComponentAsync(userId, id)) return NotFound();
+
             var deleted = await _iVehicleComponentService.DeleteVehicleComponentByIdAsync(id);
             if (!deleted)
             {
@@ -92,7 +108,5 @@ namespace VehicleMaintenance.Controllers
 
             return NoContent();
         }
-
-
     }
 }
