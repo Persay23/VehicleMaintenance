@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local Smart Fill test sample documents (not part of the app)
+_test-receipts/
