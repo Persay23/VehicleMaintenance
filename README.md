@@ -12,7 +12,9 @@ REST API for a mobile-first vehicle maintenance tracking application, built as a
 |---|---|
 | Runtime | .NET 10 |
 | Web framework | ASP.NET Core Web API |
-| Authentication | ASP.NET Core Identity (cookie-based) |
+| Authentication | ASP.NET Core Identity + **JWT bearer tokens** |
+| Authorization | Global auth policy + per-user ownership guards |
+| Rate limiting | Built-in limiter (per-minute burst) + tiered daily AI quota |
 | ORM | Entity Framework Core |
 | Database | MS SQL Server |
 | Object mapping | AutoMapper 14 |
@@ -23,7 +25,11 @@ REST API for a mobile-first vehicle maintenance tracking application, built as a
 
 ## Features
 
-- Cookie-based auth — register, login, logout via ASP.NET Core Identity
+- **JWT bearer auth** — register, login (returns a token), logout; tokens carry the user id as a `NameIdentifier` claim
+- **Per-user authorization** — every endpoint requires auth by default; all data access is scoped to the owning user (cross-user access returns 404)
+- **Rate limiting & tiered AI quota** — per-minute burst limiter + a daily AI-call cap per user, configurable per tier (Regular / Premium / Max); `GET /api/ai/quota` exposes usage
+- **Smart Fill** — parse a photographed document (receipt, fuel slip, part label, …) into form fields via Gemini vision
+- **Vehicle history export** — Markdown or PDF (QuestPDF)
 - Full vehicle CRUD with make, model, year, engine, fuel type, transmission, and odometer
 - Vehicle component tracking with expected lifetime (km + years) and health calculation
 - `ComponentHealthCalculator` as the single source of truth for all health math — used by the component service, AI service, and prompt builder
@@ -163,7 +169,17 @@ Edit `VehicleMaintenance/appsettings.json`:
 }
 ```
 
-**3. Apply migrations**
+Set the JWT signing key in user-secrets (never commit it):
+```bash
+cd VehicleMaintenance
+dotnet user-secrets set "Jwt:Key" "<a-long-random-32+-char-secret>"
+dotnet user-secrets set "AiService:ApiKey" "<your-gemini-api-key>"
+```
+
+**3. Database**
+
+Migrations are applied **automatically on startup** (`db.Database.MigrateAsync()`), so a fresh
+database is built on first run. To apply them manually instead:
 ```bash
 cd VehicleMaintenance
 dotnet ef database update
@@ -183,15 +199,16 @@ https://localhost:7235/swagger
 
 ## API Reference
 
-All endpoints require authentication (session cookie) unless marked **—**.
+All endpoints require a **JWT bearer token** (`Authorization: Bearer <token>`) unless marked **—**.
+In Swagger, click **Authorize** and paste the token from `POST /api/auth/login`.
 
 ### Auth
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|:----:|
 | POST | `/api/auth/register` | Create account | — |
-| POST | `/api/auth/login` | Login (sets session cookie) | — |
-| POST | `/api/auth/logout` | Invalidate session | ✓ |
+| POST | `/api/auth/login` | Login — returns `{ token, expiresAt }` | — |
+| POST | `/api/auth/logout` | No-op (client discards the token) | ✓ |
 
 ### Users
 
@@ -214,6 +231,7 @@ All endpoints require authentication (session cookie) unless marked **—**.
 | DELETE | `/api/vehicles/{id}` | Delete vehicle |
 | GET | `/api/vehicles/{id}/summary/costs` | Monthly cost breakdown (`?from=&to=`) |
 | GET | `/api/vehicles/{id}/summary/timeline` | Full event timeline |
+| GET | `/api/vehicles/{id}/export` | Export full history as Markdown or PDF (`?format=md\|pdf`) |
 
 ### Vehicle Components
 
@@ -290,19 +308,27 @@ All endpoints require authentication (session cookie) unless marked **—**.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/ai/predict/{componentId}` | Force-regenerate component AI prediction |
-| POST | `/api/ai/suggestions/{vehicleId}` | Force-regenerate vehicle-level AI suggestions |
+| POST | `/api/ai/suggest/{vehicleId}` | Force-regenerate vehicle-level AI suggestions |
 | POST | `/api/ai/diagnose/{vehicleId}` | Diagnose symptom — returns structured differential |
 | GET | `/api/ai/diagnose/{vehicleId}` | Diagnosis history for a vehicle |
+| POST | `/api/ai/parse/{target}` | Smart Fill — extract form fields from a document photo (`target` = record\|fuel\|component\|expense\|vehicle) |
+| GET | `/api/ai/quota` | Current user's AI tier + today's usage |
+
+*(AI endpoints are rate-limited and consume the user's daily AI quota.)*
 
 ---
 
-## Authentication
+## Authentication & Authorization
 
-ASP.NET Core Identity with **cookie-based sessions** — no JWT. The frontend sends `credentials: include` on every request. On login, Identity sets a `.AspNetCore.Identity.Application` cookie that the browser returns on subsequent requests.
+**JWT bearer tokens.** Passwords are still hashed/verified by ASP.NET Core Identity, but on login the API mints a signed JWT (`JwtTokenService`) instead of setting a cookie. The frontend stores the token and sends it as `Authorization: Bearer <token>` on every request. The token carries the user id as a `ClaimTypes.NameIdentifier` claim, so all existing `User.GetUserId()` / `UserManager.GetUserId()` reads work unchanged. Config lives under `Jwt` (`Key` in user-secrets / App Service settings; `Issuer`, `Audience`, `ExpiryDays`).
 
-CORS is configured to allow `http://localhost:5173` (the Vite dev server) with `AllowCredentials`.
+**Authorization is on by default.** A global fallback policy requires an authenticated user for every endpoint; only `login`, `register`, and `confirm-email` are `[AllowAnonymous]`. A central `VehicleOwnershipService` scopes all reads/writes to the owning user — accessing another user's resource by id returns **404**.
 
-Email confirmation and password-reset emails are disabled (`NoOpEmailSender`) — the flows exist in the Identity scaffolding but do not send real emails.
+**Rate limiting & AI quota.** A per-minute burst limiter (`AddRateLimiter`, tier-aware) guards the AI endpoints and login; on top of it, an in-memory **daily AI-call quota** per user is enforced for both manual *and* automatic (background) Gemini calls. Tiers and limits are config-driven (`AiLimits` — Regular/Premium/Max, with per-user overrides), so no migration is needed to grant a tester a higher tier.
+
+CORS allows the Vite dev server (`:5173`) and preview (`:4173`); the production Static Web App origin is added at deploy time.
+
+Email confirmation is being wired via a real SMTP `IEmailSender` (was `NoOpEmailSender`).
 
 ---
 
