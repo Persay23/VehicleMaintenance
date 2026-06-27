@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Identity;
@@ -170,7 +171,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:5090",
             "https://localhost:7235",
-            "http://localhost:5173"
+            "http://localhost:5173",
+            "http://localhost:4173"   // `npm run preview` (production build / PWA testing)
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -180,6 +182,17 @@ builder.Services.AddCors(options =>
 
 
 var app = builder.Build();
+
+// Behind App Service's reverse proxy: trust X-Forwarded-For/Proto so the app sees the real
+// client IP and knows the request arrived over HTTPS (needed for correct redirects + scheme).
+// KnownNetworks/Proxies cleared because the only ingress is the trusted App Service front end.
+var forwardedHeaders = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeaders.KnownNetworks.Clear();
+forwardedHeaders.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaders);
 
 if (app.Environment.IsDevelopment())
 {
@@ -197,6 +210,11 @@ app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
+    // Apply any pending EF migrations on startup. Azure SQL starts empty, so this builds the
+    // schema on first boot; locally it's a no-op when the DB is already up to date. Idempotent.
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+
     var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
     await seeder.SeedAsync();
 }
