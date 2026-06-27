@@ -20,6 +20,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         {
             UserName = "jan@autocare.pl",
             Email = "jan@autocare.pl",
+            EmailConfirmed = true, // seeded demo account â€” skip the confirmation flow
             Name = "Jan Kowalski",
             Age = 28,
             Gender = Gender.Male,
@@ -212,14 +213,14 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
             ServiceType = ServiceType.Inspection,
             ServiceName = "Full Oil Service",
             Cost = 320m,
-            Description = "Castrol Edge 5W-30, 4.5L. Air filter replaced as well — was very dirty.",
+            Description = "Castrol Edge 5W-30, 4.5L. Air filter replaced as well ï¿½ was very dirty.",
             MaintenanceRecordComponents =
             [
                 new()
                 {
                     ComponentId = bmwEngineOil.VehicleComponentId,
                     ComponentChangeType = ComponentChangeType.Replaced,
-                    WorkDescription = "Castrol Edge 5W-30 · 4.5L",
+                    WorkDescription = "Castrol Edge 5W-30 ï¿½ 4.5L",
                     OldState = State.Critical,
                     NewState = State.Good,
                     PartsCost = 120m,
@@ -231,7 +232,7 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
                 {
                     ComponentId = bmwAirFilter.VehicleComponentId,
                     ComponentChangeType = ComponentChangeType.Replaced,
-                    WorkDescription = "Mahle filter — very dirty",
+                    WorkDescription = "Mahle filter ï¿½ very dirty",
                     OldState = State.Critical,
                     NewState = State.Good,
                     PartsCost = 55m,
@@ -348,6 +349,6 @@ public class DataSeeder(AppDbContext context, UserManager<User> userManager)
         );
         await _context.SaveChangesAsync();
 
-        // Predictions are AI-generated — no seeding needed.
+        // Predictions are AI-generated ï¿½ no seeding needed.
     }
 }

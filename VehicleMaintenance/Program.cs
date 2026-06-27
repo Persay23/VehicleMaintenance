@@ -17,6 +17,7 @@ using VehicleMaintenance.Repositories.Interfaces;
 using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Auth;
+using VehicleMaintenance.Services.Email;
 using VehicleMaintenance.Services.Export;
 using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Services.RateLimiting;
@@ -58,6 +59,7 @@ builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 builder.Services.AddScoped<IVehicleExportService, VehicleExportService>();
 builder.Services.AddScoped<IVehicleOwnershipService, VehicleOwnershipService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
 // AI rate limiting: config-driven tiers (Regular/Premium/Max) + an in-memory daily quota.
 builder.Services.Configure<AiLimitsOptions>(builder.Configuration.GetSection("AiLimits"));
@@ -71,6 +73,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     options.Password.RequiredLength = 8;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = false;
+    options.SignIn.RequireConfirmedEmail = true; // new users must confirm via email link before login
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
