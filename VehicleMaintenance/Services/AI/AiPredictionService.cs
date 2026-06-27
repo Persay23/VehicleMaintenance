@@ -7,6 +7,7 @@ using VehicleMaintenance.Models;
 using VehicleMaintenance.Models.AI;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services.RateLimiting;
 
 namespace VehicleMaintenance.Services.AI;
 
@@ -43,11 +44,24 @@ namespace VehicleMaintenance.Services.AI;
 public class AiPredictionService(
     IServiceScopeFactory scopeFactory,
     IGeminiService gemini,
+    IUserTierService tierService,
+    IAiUsageLimiter usageLimiter,
     ILogger<AiPredictionService> logger) : IAiPredictionService
 {
     private readonly IServiceScopeFactory  _scopeFactory = scopeFactory;
     private readonly IGeminiService        _gemini       = gemini;
+    private readonly IUserTierService      _tierService  = tierService;
+    private readonly IAiUsageLimiter       _usageLimiter = usageLimiter;
     private readonly ILogger               _logger       = logger;
+
+    // Counts an automatic (background) AI call against the vehicle owner's daily quota.
+    // Manual calls are metered in AIController; here forceRefresh=true skips (no double count).
+    // Returns false when the owner is over quota, so the caller skips the Gemini call.
+    private bool TryConsumeQuota(string userId, string? email)
+    {
+        var tier = _tierService.Resolve(email);
+        return _usageLimiter.TryConsume(userId, tier.DailyLimit, out _);
+    }
 
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
@@ -115,6 +129,7 @@ public class AiPredictionService(
 
         var component = await context.VehicleComponents
             .Include(c => c.Vehicle)
+                .ThenInclude(v => v.User)
             .FirstOrDefaultAsync(c => c.VehicleComponentId == componentId);
 
         if (component is null)
@@ -134,6 +149,13 @@ public class AiPredictionService(
                 componentId,
                 (DateTime.UtcNow - component.AiGeneratedAt.Value).TotalHours,
                 ComponentStaleness.TotalHours);
+            return;
+        }
+
+        // Automatic fires count against the owner's daily AI quota (manual calls metered in the controller).
+        if (!forceRefresh && !TryConsumeQuota(component.Vehicle.UserId, component.Vehicle.User?.Email))
+        {
+            _logger.LogInformation("Skipping component {Id} AI — daily quota reached for the owner.", componentId);
             return;
         }
 
@@ -247,11 +269,19 @@ public class AiPredictionService(
 
         var vehicle = await context.Vehicles
             .Include(v => v.VehicleComponents)
+            .Include(v => v.User)
             .FirstOrDefaultAsync(v => v.VehicleId == vehicleId);
 
         if (vehicle is null)
         {
             _logger.LogWarning("GenerateVehicleSuggestionsAsync: vehicle {Id} not found.", vehicleId);
+            return;
+        }
+
+        // Automatic fires count against the owner's daily AI quota (manual calls metered in the controller).
+        if (!forceRefresh && !TryConsumeQuota(vehicle.UserId, vehicle.User?.Email))
+        {
+            _logger.LogInformation("Skipping vehicle {Id} suggestions — daily quota reached for the owner.", vehicleId);
             return;
         }
 
