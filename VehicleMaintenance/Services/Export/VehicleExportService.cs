@@ -9,11 +9,10 @@ using VehicleMaintenance.Models.Entities;
 
 namespace VehicleMaintenance.Services.Export;
 
-public partial class VehicleExportService(AppDbContext context) : IVehicleExportService
+public partial class VehicleExportService(AppDbContext context) : IVehicleExportService // to complex? 
 {
     private readonly AppDbContext _context = context;
 
-    // Everything needed to render one vehicle's history. Loaded read-only.
     private sealed record ExportData(
         Vehicle Vehicle,
         VehicleComponent[] Components,
@@ -27,7 +26,6 @@ public partial class VehicleExportService(AppDbContext context) : IVehicleExport
             .AsNoTracking()
             .FirstOrDefaultAsync(v => v.VehicleId == vehicleId, ct);
 
-        // Not found OR not owned → caller returns 404 (don't leak existence).
         if (vehicle is null || vehicle.UserId != userId) return null;
 
         var components = await _context.VehicleComponents

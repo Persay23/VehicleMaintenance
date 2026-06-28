@@ -10,7 +10,7 @@ using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Services.Auth;
 using VehicleMaintenance.Services.Email;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
 namespace VehicleMaintenance.Controllers
 {

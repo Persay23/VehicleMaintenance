@@ -1,4 +1,4 @@
-namespace VehicleMaintenance.Models;
+namespace VehicleMaintenance.Services.GenralModelService;
 
 public static class ComponentStateCalculator
 {

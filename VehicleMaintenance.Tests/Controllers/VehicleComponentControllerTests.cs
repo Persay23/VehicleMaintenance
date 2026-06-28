@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using VehicleMaintenance.Controllers;
 using VehicleMaintenance.DTOs.VehicleComponents;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 using VehicleMaintenance.Services.Security;
 
 namespace VehicleMaintenance.Tests.Controllers

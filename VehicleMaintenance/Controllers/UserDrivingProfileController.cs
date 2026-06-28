@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.UserDrivingProfile;
 using VehicleMaintenance.Extensions;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
 namespace VehicleMaintenance.Controllers
 {

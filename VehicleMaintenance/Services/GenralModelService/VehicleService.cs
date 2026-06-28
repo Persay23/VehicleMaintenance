@@ -3,10 +3,10 @@ using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.Vehicles;
 using VehicleMaintenance.Models.Entities;
 using Microsoft.EntityFrameworkCore;
-using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
-namespace VehicleMaintenance.Services
+namespace VehicleMaintenance.Services.GenralModelService
 {
     public class VehicleService(AppDbContext context, IMapper mapper) : IVehicleService
     {

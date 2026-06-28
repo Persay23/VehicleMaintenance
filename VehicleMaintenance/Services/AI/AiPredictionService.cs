@@ -3,43 +3,13 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.AI;
-using VehicleMaintenance.Models;
 using VehicleMaintenance.Models.AI;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
+using VehicleMaintenance.Services.GenralModelService;
 using VehicleMaintenance.Services.RateLimiting;
 
 namespace VehicleMaintenance.Services.AI;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HOW THE BACKGROUND AI FIRING IS PROTECTED  (plain-language overview)
-//
-// Touching a component (editing it, or linking it to a maintenance record) fires
-// a fire-and-forget background task that does TWO separate AI jobs:
-//
-//   1. Component prediction  — "for THIS one part, how much life is left?"
-//                              One Gemini call per component. 10 parts = 10 calls,
-//                              on purpose (each part stores its own prediction).
-//   2. Vehicle suggestions   — "looking at the WHOLE car, what are the top jobs?"
-//                              Should run ONCE per car, no matter how many parts changed.
-//
-// There are THREE layers of protection so we don't spam Gemini:
-//
-//   A. In-flight claim (this file: _componentsInFlight / _vehiclesInFlight).
-//      An atomic ConcurrentDictionary "claim". When 10 triggers fire at once for the
-//      same car, only the first task wins the claim and runs; the others skip instantly.
-//      This closes the race where several tasks all check the timestamp guard before
-//      any of them has saved a result. In-process only (fine for a single server).
-//
-//   B. Component staleness (ComponentStaleness, 24h). A component re-predicts at most
-//      once per 24h via background triggers. Survives restarts (stored on AiGeneratedAt).
-//
-//   C. Suggestion cooldown (SuggestionCooldown, 10min). Vehicle suggestions regenerate
-//      at most once per 10min via background triggers. Based on the newest prediction row.
-//
-// The manual endpoints (POST /api/ai/predict/{id}, /suggest/{id}) pass forceRefresh=true
-// and bypass ALL of these — an explicit user request always runs.
-// ─────────────────────────────────────────────────────────────────────────────
 
 public class AiPredictionService(
     IServiceScopeFactory scopeFactory,
@@ -54,9 +24,6 @@ public class AiPredictionService(
     private readonly IAiUsageLimiter       _usageLimiter = usageLimiter;
     private readonly ILogger               _logger       = logger;
 
-    // Counts an automatic (background) AI call against the vehicle owner's daily quota.
-    // Manual calls are metered in AIController; here forceRefresh=true skips (no double count).
-    // Returns false when the owner is over quota, so the caller skips the Gemini call.
     private bool TryConsumeQuota(string userId, string? email)
     {
         var tier = _tierService.Resolve(email);
@@ -65,13 +32,9 @@ public class AiPredictionService(
 
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    // Layer A — atomic in-flight claims. Keyed by id; a successful TryAdd means "I own
-    // this run", and concurrent triggers for the same id skip instead of duplicating work.
     private static readonly ConcurrentDictionary<int, byte> _componentsInFlight = new();
     private static readonly ConcurrentDictionary<int, byte> _vehiclesInFlight   = new();
 
-    // Tries to claim an id atomically. Returns a token (release it by disposing — use
-    // `using var`), or null if another run already holds the claim for that id.
     private static ClaimToken? TryClaim(ConcurrentDictionary<int, byte> set, int id) =>
         set.TryAdd(id, 0) ? new ClaimToken(set, id) : null;
 
@@ -105,18 +68,11 @@ public class AiPredictionService(
     // PER-COMPONENT PREDICTION
     // ═══════════════════════════════════════════
 
-    // How long a component AI result stays fresh before a background trigger re-runs it.
-    // Manual calls (POST /api/ai/predict/{id}) bypass this — they always run.
     private static readonly TimeSpan ComponentStaleness = TimeSpan.FromHours(24);
-
-    // Minimum gap between vehicle-suggestion runs triggered by the same action cascade
-    // (e.g. adding N components to one record fires N triggers — only the first should run).
     private static readonly TimeSpan SuggestionCooldown = TimeSpan.FromMinutes(10);
 
     public async Task GenerateComponentPredictionAsync(int componentId, bool forceRefresh = false)
     {
-        // Layer A — atomic claim. If another background run already owns this component,
-        // skip instantly instead of racing it. Auto-released when the method returns.
         using var claim = forceRefresh ? null : TryClaim(_componentsInFlight, componentId);
         if (!forceRefresh && claim is null)
         {
@@ -138,8 +94,6 @@ public class AiPredictionService(
             return;
         }
 
-        // Staleness guard — skip background re-run if AI result is still fresh.
-        // forceRefresh=true is used by the manual /api/ai/predict/{id} endpoint.
         if (!forceRefresh &&
             component.AiGeneratedAt.HasValue &&
             component.AiGeneratedAt.Value > DateTime.UtcNow - ComponentStaleness)
@@ -152,7 +106,6 @@ public class AiPredictionService(
             return;
         }
 
-        // Automatic fires count against the owner's daily AI quota (manual calls metered in the controller).
         if (!forceRefresh && !TryConsumeQuota(component.Vehicle.UserId, component.Vehicle.User?.Email))
         {
             _logger.LogInformation("Skipping component {Id} AI — daily quota reached for the owner.", componentId);
@@ -193,14 +146,12 @@ public class AiPredictionService(
                 return;
             }
 
-            // Require at least one meaningful output before saving
             if (result.EstimatedNextServiceDate is null && result.EstimatedRemainingKm is null)
             {
                 _logger.LogWarning("AI returned no date or km estimate for component {Id} — skipping save.", componentId);
                 return;
             }
 
-            // Enforce confidence caps — never trust the model to self-limit
             var confidence = CalculateConfidence(
                 raw:              result.ConfidenceScore ?? 0.30,
                 historyCount:     history.Count,
@@ -234,8 +185,6 @@ public class AiPredictionService(
 
     public async Task GenerateVehicleSuggestionsAsync(int vehicleId, bool forceRefresh = false)
     {
-        // Layer A — atomic claim. When 10 components are saved at once, all 10 triggers
-        // call this for the same vehicle; only the first wins the claim, the rest skip.
         using var claim = forceRefresh ? null : TryClaim(_vehiclesInFlight, vehicleId);
         if (!forceRefresh && claim is null)
         {
@@ -246,8 +195,6 @@ public class AiPredictionService(
         using var scope = _scopeFactory.CreateScope();
         var context     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // Cooldown guard — when multiple components are added to one record the trigger fires
-        // once per component. Only the first run should actually call Gemini; the rest skip.
         if (!forceRefresh)
         {
             var mostRecent = await context.Predictions
@@ -296,7 +243,6 @@ public class AiPredictionService(
         var profile = await context.UserDrivingProfiles
             .FirstOrDefaultAsync(p => p.UserId == vehicle.UserId);
 
-        // Profile annual km belongs to the prompt itself — pass null so it isn't double-counted here.
         var recordPoints = recentRecords.Select(r => (km: r.Mileage ?? 0, date: r.ServiceDate)).ToList();
         var avgKmPerYear = ComputeAvgKmPerYear(vehicle.AverageKmPerYear, profile: null, recordPoints);
 
@@ -323,9 +269,6 @@ public class AiPredictionService(
                     continue;
                 }
 
-                // The AI returns the component's integer ID directly from the prompt list,
-                // or null for vehicle-level suggestions. Validate it belongs to this vehicle
-                // so a hallucinated ID can't link to another vehicle's component.
                 int? resolvedComponentId = null;
                 if (s.VehicleComponentId.HasValue)
                 {
@@ -371,7 +314,6 @@ public class AiPredictionService(
     // DIAGNOSIS
     // ═══════════════════════════════════════════
 
-    // Attached in code — not requested from the model (saves tokens, guarantees exact text).
     private const string DiagnosisDisclaimer =
         "This is an AI-assisted assessment only. Always consult a qualified mechanic " +
         "before making repair decisions or continuing to drive if safety may be affected.";
@@ -442,14 +384,14 @@ public class AiPredictionService(
             .OrderBy(d => d.CreatedAt)
             .ToArrayAsync();
 
-        return diagnoses.Select(d => MapToDto(
+        return [.. diagnoses.Select(d => MapToDto(
             d,
             JsonSerializer.Deserialize<List<string>>(d.LikelyCauses,       _jsonOptions) ?? [],
             JsonSerializer.Deserialize<List<string>>(d.RecommendedActions,  _jsonOptions) ?? [],
             d.RelatedComponentNames is not null
                 ? JsonSerializer.Deserialize<List<string>>(d.RelatedComponentNames, _jsonOptions) ?? []
                 : []
-        )).ToArray();
+        ))];
     }
 
     private static AiDiagnosisDto MapToDto(
@@ -473,8 +415,6 @@ public class AiPredictionService(
     // SHARED HELPERS
     // ═══════════════════════════════════════════
 
-    // Caps the raw AI confidence against history depth and adjusts for schedule/profile signals.
-    // Extracted so it can be read and tested in isolation.
     private static double CalculateConfidence(
         double raw,
         int    historyCount,
@@ -493,8 +433,6 @@ public class AiPredictionService(
         return confidence;
     }
 
-    // Priority: 1 vehicle stored avg 2 profile annual km 3 compute from record span.
-    // Pass profile=null when the prompt already receives it directly (vehicle suggestions).
     private static int? ComputeAvgKmPerYear(
         int? vehicleStoredAvg,
         UserDrivingProfile? profile,

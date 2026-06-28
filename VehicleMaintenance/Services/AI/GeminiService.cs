@@ -81,13 +81,18 @@ public class GeminiService : IGeminiService
                           .GetString() ?? "";
             }
 
-            if (attempt == 3 || (int)resp.StatusCode != 503)
+            var retryable = (int)resp.StatusCode is 503 or 429;
+            if (attempt == 3 || !retryable)
             {
                 var errorBody = await resp.Content.ReadAsStringAsync(ct);
                 throw new HttpRequestException($"Gemini {(int)resp.StatusCode}: {errorBody}");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(attempt * 2), ct);
+            // 429 = Gemini's own rate limit — back off longer than a transient 503
+            var delay = (int)resp.StatusCode == 429
+                ? TimeSpan.FromSeconds(attempt * 5)
+                : TimeSpan.FromSeconds(attempt * 2);
+            await Task.Delay(delay, ct);
         }
 
         throw new InvalidOperationException("Gemini request failed after all retries.");

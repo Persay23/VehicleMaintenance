@@ -11,7 +11,7 @@ public static partial class PromptBuilderService
         int? avgKmPerYear = null,
         DateTime? referenceDate = null)
     {
-        var today       = (referenceDate ?? DateTime.Today).Date;
+        var today       = (referenceDate ?? DateTime.UtcNow).Date;
         var immediateBy = today.AddDays(14);
         var soonBy      = today.AddMonths(2);
         var scheduledBy = today.AddMonths(6);

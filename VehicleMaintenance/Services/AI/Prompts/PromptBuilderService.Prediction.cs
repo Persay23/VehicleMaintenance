@@ -1,5 +1,5 @@
-using VehicleMaintenance.Models;
 using VehicleMaintenance.Models.Entities;
+using VehicleMaintenance.Services.GenralModelService;
 
 namespace VehicleMaintenance.Services.AI;
 

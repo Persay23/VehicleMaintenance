@@ -11,7 +11,7 @@ public static partial class PromptBuilderService
         string symptom,
         DateTime? referenceDate = null)
     {
-        var today            = (referenceDate ?? DateTime.Today).Date;
+        var today            = (referenceDate ?? DateTime.UtcNow).Date;
         var componentSummary = BuildComponentSummary(vehicle, today);
         var recordsSummary   = BuildRecentRecordsSummary(recentRecords);
 

@@ -1,19 +1,13 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.AspNetCore.Identity;
 using MimeKit;
+using VehicleMaintenance.Models.Entities;
 
 namespace VehicleMaintenance.Services.Email;
 
-/// <summary>
-/// Generic SMTP email sender (MailKit). If <c>Email:Smtp:Host</c> is not configured (local dev), it
-/// logs the message — including links — to the console instead of sending, so the confirmation flow
-/// is fully testable without a provider. In production, set the SMTP settings (e.g. Brevo) and the
-/// key in user-secrets / App Service config.
-///
-/// MailKit is used rather than System.Net.Mail.SmtpClient because the latter mishandles the
-/// STARTTLS → AUTH sequence with some providers (Brevo returns "5.7.0 Please authenticate first").
-/// </summary>
-public class SmtpEmailService(IConfiguration config, ILogger<SmtpEmailService> logger) : IEmailService
+public class SmtpEmailService(IConfiguration config, ILogger<SmtpEmailService> logger)
+    : IEmailService, IEmailSender<User>
 {
     private readonly IConfiguration _config = config;
     private readonly ILogger<SmtpEmailService> _logger = logger;
@@ -48,7 +42,6 @@ public class SmtpEmailService(IConfiguration config, ILogger<SmtpEmailService> l
         message.Subject = subject;
         message.Body = new TextPart("html") { Text = htmlBody };
 
-        // 465 = implicit TLS; anything else (587/2525) = STARTTLS.
         var secure = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
 
         using var client = new SmtpClient();
@@ -59,4 +52,16 @@ public class SmtpEmailService(IConfiguration config, ILogger<SmtpEmailService> l
 
         _logger.LogInformation("Confirmation email sent to {To}.", to);
     }
+
+    public Task SendConfirmationLinkAsync(User user, string email, string confirmationLink) =>
+        SendAsync(email, "Confirm your AutoCare account",
+            $"<p>Please confirm your account by clicking: <a href='{confirmationLink}'>{confirmationLink}</a></p>");
+
+    public Task SendPasswordResetLinkAsync(User user, string email, string resetLink) =>
+        SendAsync(email, "Reset your AutoCare password",
+            $"<p>Click to reset your password: <a href='{resetLink}'>{resetLink}</a></p>");
+
+    public Task SendPasswordResetCodeAsync(User user, string email, string resetCode) =>
+        SendAsync(email, "Your AutoCare reset code",
+            $"<p>Your password reset code is: <strong>{resetCode}</strong></p>");
 }

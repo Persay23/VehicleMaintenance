@@ -1,7 +1,7 @@
 using VehicleMaintenance.DTOs.FuelEntry;
 using VehicleMaintenance.Models.Enums;
 
-namespace VehicleMaintenance.Services.Interfaces
+namespace VehicleMaintenance.Services.GenralModelService.Interfaces
 {
     public interface IFuelEntryService
     {

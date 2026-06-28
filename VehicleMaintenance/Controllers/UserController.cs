@@ -2,8 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Users;
 using VehicleMaintenance.Extensions;
-using VehicleMaintenance.Services.Interfaces;
-
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
 namespace VehicleMaintenance.Controllers
 {

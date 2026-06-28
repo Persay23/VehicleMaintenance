@@ -24,10 +24,7 @@ public class ReceiptParsingService(IGeminiService gemini, ILogger<ReceiptParsing
     public Task<VehicleParseResultDto?> ParseVehicleAsync(byte[] image, string mimeType, CancellationToken ct = default)
         => ParseAsync<VehicleParseResultDto>(PromptBuilderService.BuildVehicleParsePrompt(), image, mimeType, ct);
 
-    // Shared core: run a multimodal Gemini call and deserialise, swallowing failures so the
-    // caller can fall back to manual entry (AI rule #4 — never let parsing break the flow).
-    private async Task<T?> ParseAsync<T>(string prompt, byte[] image, string mimeType, CancellationToken ct)
-        where T : class
+    private async Task<T?> ParseAsync<T>(string prompt, byte[] image, string mimeType, CancellationToken ct) where T : class // deep into
     {
         try
         {

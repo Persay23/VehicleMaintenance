@@ -1,6 +1,6 @@
 using VehicleMaintenance.DTOs.Prediction;
 
-namespace VehicleMaintenance.Services.Interfaces
+namespace VehicleMaintenance.Services.GenralModelService.Interfaces
 {
     public interface IPredictionService
     {

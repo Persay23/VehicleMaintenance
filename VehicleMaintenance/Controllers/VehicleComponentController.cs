@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Extensions;
 using VehicleMaintenance.Services.Security;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
 namespace VehicleMaintenance.Controllers
 {

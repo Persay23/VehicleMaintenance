@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using VehicleMaintenance.DTOs.Prediction;
 using VehicleMaintenance.Extensions;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 using VehicleMaintenance.Services.Security;
 
 namespace VehicleMaintenance.Controllers

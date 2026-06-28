@@ -1,7 +1,6 @@
-﻿// Services/VehicleComponentServiceTests.cs
+﻿
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -9,12 +8,11 @@ using VehicleMaintenance.DTOs.VehicleComponents;
 using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
-using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Tests.Helpers;
-using VehicleMaintenance.Services.Interfaces;
-using VehicleMaintenance.Data;
-using Xunit;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
+
+using VehicleMaintenance.Services.GenralModelService;
 
 namespace VehicleMaintenance.Tests.Services
 {

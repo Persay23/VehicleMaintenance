@@ -3,9 +3,9 @@ using VehicleMaintenance.DTOs.UserDrivingProfile;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Repositories.Interfaces;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
-namespace VehicleMaintenance.Services
+namespace VehicleMaintenance.Services.GenralModelService
 {
     public class UserDrivingProfileService(IUserDrivingProfileRepository repository, IMapper mapper) : IUserDrivingProfileService
     {

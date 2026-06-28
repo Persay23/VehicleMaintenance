@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using VehicleMaintenance.DTOs.Users;
 
-namespace VehicleMaintenance.Services.Interfaces
+namespace VehicleMaintenance.Services.GenralModelService.Interfaces
 {
     public interface IUserService
     {

@@ -4,7 +4,7 @@ using VehicleMaintenance.DTOs.Vehicles;
 using VehicleMaintenance.Extensions;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Services.Export;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 using VehicleMaintenance.Services.Security;
 
 namespace VehicleMaintenance.Controllers

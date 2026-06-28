@@ -12,7 +12,6 @@ public class LocalFileStorage : IFileStorage
 
     public LocalFileStorage(IWebHostEnvironment env)
     {
-        // WebRootPath is null until wwwroot exists; fall back to the conventional path.
         _webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
     }
 

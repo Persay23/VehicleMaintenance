@@ -1,16 +1,13 @@
-using VehicleMaintenance.Models;
 using VehicleMaintenance.Models.Entities;
+using VehicleMaintenance.Services.GenralModelService;
 
 namespace VehicleMaintenance.Services.AI;
 
-// Prompt changelog:
-// v1 — full prediction prompt with wear rules, driving profile, complaint detection
 
 public static partial class PromptBuilderService
 {
-    // ═══════════════════════════════════════════
+
     // SHARED HELPERS
-    // ═══════════════════════════════════════════
 
     private static string FormatServiceHistory(List<MaintenanceRecordComponent> history)
     {

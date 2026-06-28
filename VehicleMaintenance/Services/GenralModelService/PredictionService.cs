@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.Prediction;
 using VehicleMaintenance.Models.Enums;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
-namespace VehicleMaintenance.Services
+namespace VehicleMaintenance.Services.GenralModelService
 {
     public class PredictionService(AppDbContext context, IMapper mapper) : IPredictionService
     {

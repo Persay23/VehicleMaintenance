@@ -1,6 +1,6 @@
 using VehicleMaintenance.DTOs.VehicleComponents;
 
-namespace VehicleMaintenance.Services.Interfaces
+namespace VehicleMaintenance.Services.GenralModelService.Interfaces
 {
     public interface IVehicleComponentService
     {

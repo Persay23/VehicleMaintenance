@@ -2,11 +2,8 @@ using System.Collections.Concurrent;
 
 namespace VehicleMaintenance.Services.RateLimiting;
 
-/// <summary>
-/// In-memory per-user daily AI counter (UTC day). Singleton. A hard money cap on top of the
-/// per-minute burst limiter. Not persisted — resets if the server restarts, which is fine: it
-/// guards against user abuse, not against the operator. Persistent counting is a deferred item.
-/// </summary>
+// Singleton. A hard money cap on top of the per-minute burst limiter.
+
 public class AiUsageLimiter : IAiUsageLimiter
 {
     private sealed class Counter

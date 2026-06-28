@@ -5,9 +5,9 @@ using VehicleMaintenance.DTOs.MaintenanceRecordComponents;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services.AI;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
-namespace VehicleMaintenance.Services
+namespace VehicleMaintenance.Services.GenralModelService
 {
     public class MaintenanceRecordComponentService(
         AppDbContext context,

@@ -4,9 +4,9 @@ using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.FuelEntry;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
-namespace VehicleMaintenance.Services
+namespace VehicleMaintenance.Services.GenralModelService
 {
     public class FuelEntryService(AppDbContext context, IMapper mapper) : IFuelEntryService
     {

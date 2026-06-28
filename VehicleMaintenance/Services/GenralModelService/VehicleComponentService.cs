@@ -4,13 +4,12 @@ using Microsoft.SqlServer.Server;
 using System.ComponentModel;
 using VehicleMaintenance.Data;
 using VehicleMaintenance.DTOs.VehicleComponents;
-using VehicleMaintenance.Models;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Models.Enums;
 using VehicleMaintenance.Services.AI;
-using VehicleMaintenance.Services.Interfaces;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
-namespace VehicleMaintenance.Services
+namespace VehicleMaintenance.Services.GenralModelService
 {
     public class VehicleComponentService(
         AppDbContext context,

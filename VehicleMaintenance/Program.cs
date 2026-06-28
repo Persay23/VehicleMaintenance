@@ -14,19 +14,18 @@ using VehicleMaintenance.Mappings;
 using VehicleMaintenance.Models.Entities;
 using VehicleMaintenance.Repositories;
 using VehicleMaintenance.Repositories.Interfaces;
-using VehicleMaintenance.Services;
 using VehicleMaintenance.Services.AI;
 using VehicleMaintenance.Services.Auth;
 using VehicleMaintenance.Services.Email;
 using VehicleMaintenance.Services.Export;
-using VehicleMaintenance.Services.Interfaces;
 using VehicleMaintenance.Services.RateLimiting;
 using VehicleMaintenance.Services.Receipts;
 using VehicleMaintenance.Services.Security;
 using VehicleMaintenance.Services.Storage;
 using Microsoft.AspNetCore.Authorization;
+using VehicleMaintenance.Services.GenralModelService;
+using VehicleMaintenance.Services.GenralModelService.Interfaces;
 
-// QuestPDF Community licence — free for individuals / orgs under the revenue threshold (covers this project).
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,7 +47,10 @@ builder.Services.AddScoped<IGeneralExpenseService, GeneralExpenseService>();
 builder.Services.AddScoped<IUserDrivingProfileRepository, UserDrivingProfileRepository>();
 builder.Services.AddScoped<IUserDrivingProfileService, UserDrivingProfileService>();
 builder.Services.AddScoped<DataSeeder>();
-builder.Services.AddSingleton<IEmailSender<User>, NoOpEmailSender<User>>();
+// Single SmtpEmailService satisfies both IEmailService (app code) and IEmailSender<User> (Identity internals).
+builder.Services.AddScoped<SmtpEmailService>();
+builder.Services.AddScoped<IEmailService>(sp => sp.GetRequiredService<SmtpEmailService>());
+builder.Services.AddScoped<IEmailSender<User>>(sp => sp.GetRequiredService<SmtpEmailService>());
 builder.Services.AddHttpClient<IGeminiService, GeminiService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(120);
@@ -59,9 +61,7 @@ builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 builder.Services.AddScoped<IVehicleExportService, VehicleExportService>();
 builder.Services.AddScoped<IVehicleOwnershipService, VehicleOwnershipService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
-// AI rate limiting: config-driven tiers (Regular/Premium/Max) + an in-memory daily quota.
 builder.Services.Configure<AiLimitsOptions>(builder.Configuration.GetSection("AiLimits"));
 builder.Services.AddSingleton<IUserTierService, UserTierService>();
 builder.Services.AddSingleton<IAiUsageLimiter, AiUsageLimiter>();
@@ -78,9 +78,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// JWT bearer is the default scheme (overrides the cookie scheme AddIdentity registers).
-// The SPA sends the token in the Authorization header, so this works cross-origin and
-// returns a clean 401 (no cookie redirect) on unauthenticated requests.
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -105,16 +103,12 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddControllers();
 
-// Require an authenticated user on every endpoint by default. Public entry points
-// (login / register) opt out with [AllowAnonymous]. Closes the previous hole where most
-// controllers were reachable anonymously.
+
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build());
 
-// Per-minute burst limiter. The "ai" policy is tier-aware (Max tier → no limit, for testing);
-// the "login" policy is a per-IP brute-force guard. Rejections return 429.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -151,7 +145,6 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    // Adds an "Authorize" button so you can paste a JWT and call protected endpoints from Swagger.
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -175,7 +168,7 @@ builder.Services.AddCors(options =>
             "http://localhost:5090",
             "https://localhost:7235",
             "http://localhost:5173",
-            "http://localhost:4173"   // `npm run preview` (production build / PWA testing)
+            "http://localhost:4173"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -186,9 +179,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Behind App Service's reverse proxy: trust X-Forwarded-For/Proto so the app sees the real
-// client IP and knows the request arrived over HTTPS (needed for correct redirects + scheme).
-// KnownNetworks/Proxies cleared because the only ingress is the trusted App Service front end.
 var forwardedHeaders = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -213,8 +203,6 @@ app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
-    // Apply any pending EF migrations on startup. Azure SQL starts empty, so this builds the
-    // schema on first boot; locally it's a no-op when the DB is already up to date. Idempotent.
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 

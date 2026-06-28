@@ -1,6 +1,6 @@
 using VehicleMaintenance.Models.Entities;
 
-namespace VehicleMaintenance.Models;
+namespace VehicleMaintenance.Services.GenralModelService;
 
 /// <summary>
 /// All derived measurements for one component at a point in time.

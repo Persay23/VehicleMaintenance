@@ -4,7 +4,7 @@ public static partial class PromptBuilderService
 {
     public static string BuildVehicleParsePrompt(DateTime? referenceDate = null)
     {
-        var today = (referenceDate ?? DateTime.Today).Date;
+        var today = (referenceDate ?? DateTime.UtcNow).Date;
 
         var jsonResponseFormat = """
             {
