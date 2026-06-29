@@ -9,6 +9,5 @@ public class AiDiagnosisDto
     public List<string> LikelyCauses { get; init; } = [];
     public List<string> RecommendedActions { get; init; } = [];
     public List<string> RelatedComponents { get; init; } = [];
-    public string Disclaimer { get; init; } = null!;
     public DateTime CreatedAt { get; init; }
 }

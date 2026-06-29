@@ -314,10 +314,6 @@ public class AiPredictionService(
     // DIAGNOSIS
     // ═══════════════════════════════════════════
 
-    private const string DiagnosisDisclaimer =
-        "This is an AI-assisted assessment only. Always consult a qualified mechanic " +
-        "before making repair decisions or continuing to drive if safety may be affected.";
-
     public async Task<AiDiagnosisDto?> DiagnoseAsync(int vehicleId, string symptom)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -407,7 +403,6 @@ public class AiPredictionService(
         LikelyCauses       = causes,
         RecommendedActions = actions,
         RelatedComponents  = related,
-        Disclaimer         = DiagnosisDisclaimer,
         CreatedAt          = entity.CreatedAt,
     };
 
